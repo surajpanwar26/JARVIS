@@ -66,7 +66,12 @@ export const QuickResultPage: React.FC<QuickResultPageProps> = ({ initialQuery, 
       }
     });
 
-    await workflowRef.current.start(topic, false); // isDeep = false
+    try {
+      await workflowRef.current.start(topic, false); // isDeep = false
+    } catch (e: any) {
+      setStatus(ResearchStatus.ERROR);
+      setLogs(prev => [...prev, { id: generateId(), message: `Execution Error: ${e.message}`, timestamp: new Date(), type: 'error' }]);
+    }
   };
 
   const handleChat = async (question: string) => {
@@ -81,6 +86,9 @@ export const QuickResultPage: React.FC<QuickResultPageProps> = ({ initialQuery, 
     try {
       const answer = await askFollowUp(chatMessages, currentContext, question);
       setChatMessages(p => [...p, { id: generateId(), role: 'assistant', content: answer, timestamp: new Date() }]);
+    } catch (e: any) {
+      setLogs(prev => [...prev, { id: generateId(), message: `Chat Error: ${e.message}`, timestamp: new Date(), type: 'error' }]);
+      setChatMessages(p => [...p, { id: generateId(), role: 'assistant', content: "I encountered an error trying to answer that. Please check the logs.", timestamp: new Date() }]);
     } finally {
       setIsLoadingChat(false);
     }
@@ -191,6 +199,11 @@ export const QuickResultPage: React.FC<QuickResultPageProps> = ({ initialQuery, 
                       {/* Cursor */}
                       {(status === ResearchStatus.SYNTHESIZING || status === ResearchStatus.SEARCHING) && (
                          <div className="inline-block w-1.5 h-4 bg-amber-500 animate-pulse ml-1 align-middle"></div>
+                      )}
+                      {status === ResearchStatus.ERROR && !streamedReport && (
+                        <div className="text-red-400 text-center font-mono mt-10">
+                          System Failure. Check logs for details.
+                        </div>
                       )}
                    </>
                 )}

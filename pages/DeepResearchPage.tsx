@@ -75,7 +75,12 @@ export const DeepResearchPage: React.FC<DeepResearchPageProps> = ({ initialQuery
       }
     });
 
-    await workflowRef.current.start(topic, true); // isDeep = true
+    try {
+       await workflowRef.current.start(topic, true); // isDeep = true
+    } catch (e: any) {
+       setStatus(ResearchStatus.ERROR);
+       setLogs(prev => [...prev, { id: generateId(), message: `Execution Error: ${e.message}`, timestamp: new Date(), type: 'error' }]);
+    }
   };
 
   const handleChat = async (question: string) => {
@@ -90,6 +95,9 @@ export const DeepResearchPage: React.FC<DeepResearchPageProps> = ({ initialQuery
     try {
       const answer = await askFollowUp(chatMessages, currentContext, question);
       setChatMessages(p => [...p, { id: generateId(), role: 'assistant', content: answer, timestamp: new Date() }]);
+    } catch (e: any) {
+      setLogs(prev => [...prev, { id: generateId(), message: `Chat Error: ${e.message}`, timestamp: new Date(), type: 'error' }]);
+      setChatMessages(p => [...p, { id: generateId(), role: 'assistant', content: "System Error: Unable to process request.", timestamp: new Date() }]);
     } finally {
       setIsLoadingChat(false);
     }
@@ -195,6 +203,11 @@ export const DeepResearchPage: React.FC<DeepResearchPageProps> = ({ initialQuery
                           {/* Typing Cursor Effect */}
                           {(status === ResearchStatus.PLANNING || status === ResearchStatus.SEARCHING || status === ResearchStatus.SYNTHESIZING) && (
                             <div className="inline-block w-2 h-4 bg-cyan-500 animate-pulse ml-1 align-middle"></div>
+                          )}
+                          {status === ResearchStatus.ERROR && !streamedReport && (
+                            <div className="text-red-400 text-center font-mono mt-10 p-4 border border-red-500/20 bg-red-500/10 rounded">
+                               Mission Aborted. Agent communication failure.
+                            </div>
                           )}
                         </>
                       ) : (

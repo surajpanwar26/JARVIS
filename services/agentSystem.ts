@@ -19,7 +19,6 @@ class EditorAgent extends BaseAgent {
     this.emit({ type: 'agent_action', agentName: 'Editor', message: 'Analyzing request and outlining research strategy...', timestamp: new Date() });
     
     const count = state.isDeep ? 5 : 3;
-    // Fix: Ensure template literal is simple and clean
     const prompt = `Topic: "${state.topic}"
 Role: You are the Research Editor. Plan the outline.
 Task: Generate ${count} specific, targeted search queries to cover this topic comprehensively.
@@ -34,13 +33,25 @@ Format: Return ONLY a raw JSON array of strings.`;
       
       // Clean up potential markdown code blocks from response
       const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
-      const queries = JSON.parse(jsonStr);
+      let queries = [];
+      try {
+          queries = JSON.parse(jsonStr);
+      } catch (parseError) {
+          console.warn("JSON Parse failed for plan, using regex fallback");
+          // Fallback regex to extract strings inside quotes if JSON parse fails
+          const matches = jsonStr.match(/"([^"]+)"/g);
+          if (matches) {
+            queries = matches.map(m => m.replace(/"/g, ''));
+          } else {
+            throw new Error("Could not parse plan");
+          }
+      }
       
       this.emit({ type: 'plan', agentName: 'Editor', message: `Research Outline: ${queries.join(', ')}`, timestamp: new Date() });
       return { ...state, plan: queries };
-    } catch (e) {
+    } catch (e: any) {
       console.error("Planning Error", e);
-      this.emit({ type: 'error', message: 'Planning failed, reverting to basic search.', timestamp: new Date() });
+      this.emit({ type: 'error', message: `Planning failed: ${e.message}. Reverting to basic search.`, timestamp: new Date() });
       return { ...state, plan: [state.topic] };
     }
   }
@@ -81,8 +92,8 @@ class ResearcherAgent extends BaseAgent {
           }
         }
 
-      } catch (err) {
-        this.emit({ type: 'error', message: `Search failed for ${query}`, timestamp: new Date() });
+      } catch (err: any) {
+        this.emit({ type: 'error', message: `Search failed for "${query}": ${err.message}`, timestamp: new Date() });
       }
     }
 
@@ -135,7 +146,8 @@ class WriterAgent extends BaseAgent {
       return { ...state, report: fullReport };
     } catch (e: any) {
       console.error(e);
-      return { ...state, report: "Drafting failed. " + e.message };
+      this.emit({ type: 'error', message: `Drafting failed: ${e.message}`, timestamp: new Date() });
+      return { ...state, report: `**Report Generation Failed**\n\nError: ${e.message}\n\nPlease check API keys and try again.` };
     }
   }
 }
@@ -191,7 +203,7 @@ export class ResearchWorkflow {
        }
     } else {
        this.emit({ type: 'info', message: 'Running in Browser Mode (TypeScript Agents)', timestamp: new Date() });
-       this.runFrontendAgents(topic, isDeep);
+       await this.runFrontendAgents(topic, isDeep);
     }
   }
 
@@ -225,7 +237,7 @@ export class ResearchWorkflow {
       state = await publisher.execute(state);
 
     } catch (e: any) {
-      this.emit({ type: 'error', message: e.message, timestamp: new Date() });
+      this.emit({ type: 'error', message: `Workflow Critical Failure: ${e.message}`, timestamp: new Date() });
     }
   }
 }

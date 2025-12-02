@@ -34,20 +34,25 @@ export const api = {
       });
       
       if (!response.ok) {
-        const text = await response.text();
-        let errorDetail = response.statusText;
+        let errorMessage = `Backend Error (${response.status})`;
         try {
-            const json = JSON.parse(text);
-            errorDetail = json.detail || text;
-        } catch (e) { errorDetail = text; }
+           // Try to parse detailed JSON error from FastAPI
+           const errorData = await response.json();
+           if (errorData.detail) errorMessage = errorData.detail;
+           else if (errorData.message) errorMessage = errorData.message;
+        } catch (parseError) {
+           // Fallback to text if JSON parse fails
+           const text = await response.text();
+           if (text) errorMessage = `${errorMessage}: ${text}`;
+        }
         
-        throw new Error(`Backend Error (${response.status}): ${errorDetail}`);
+        throw new Error(errorMessage);
       }
       
       return await response.json();
     } catch (error: any) {
       console.error("Research API Error:", error);
-      throw error;
+      throw error; // Re-throw to be caught by UI
     }
   },
 
@@ -64,8 +69,14 @@ export const api = {
       });
       
       if (!response.ok) {
-         const errorData = await response.json().catch(() => ({ detail: response.statusText }));
-         throw new Error(errorData.detail || "Chat failed");
+         let errorMessage = "Chat failed";
+         try {
+            const errorData = await response.json();
+            if (errorData.detail) errorMessage = errorData.detail;
+         } catch (e) {
+            errorMessage = response.statusText;
+         }
+         throw new Error(errorMessage);
       }
       const data = await response.json();
       return data.answer;

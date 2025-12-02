@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { ResearchLogs } from '../components/ResearchLogs';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
@@ -50,19 +49,24 @@ export const DocAnalysisPage: React.FC<DocAnalysisPageProps> = ({ initialFile, o
     try {
         const reader = new FileReader();
         reader.onload = async (e) => {
-          const base64 = (e.target?.result as string).split(',')[1];
-          setStatus(ResearchStatus.SYNTHESIZING);
-          setLogs(p => [...p, { id: generateId(), message: 'RAG Protocol: Retrieving key contexts...', timestamp: new Date(), type: 'info' }]);
-          
-          const data = await analyzeDocument(base64, file.type || 'text/plain');
-          setResult(data);
-          setStatus(ResearchStatus.COMPLETED);
-          setLogs(p => [...p, { id: generateId(), message: 'Analysis Complete', timestamp: new Date(), type: 'success' }]);
+          try {
+             const base64 = (e.target?.result as string).split(',')[1];
+             setStatus(ResearchStatus.SYNTHESIZING);
+             setLogs(p => [...p, { id: generateId(), message: 'RAG Protocol: Retrieving key contexts...', timestamp: new Date(), type: 'info' }]);
+             
+             const data = await analyzeDocument(base64, file.type || 'text/plain');
+             setResult(data);
+             setStatus(ResearchStatus.COMPLETED);
+             setLogs(p => [...p, { id: generateId(), message: 'Analysis Complete', timestamp: new Date(), type: 'success' }]);
+          } catch (analysisError: any) {
+             setStatus(ResearchStatus.ERROR);
+             setLogs(p => [...p, { id: generateId(), message: `Analysis Error: ${analysisError.message}`, timestamp: new Date(), type: 'error' }]);
+          }
         };
         reader.readAsDataURL(file);
-    } catch (e) {
+    } catch (e: any) {
         setStatus(ResearchStatus.ERROR);
-        setLogs(p => [...p, { id: generateId(), message: 'Ingestion Failed', timestamp: new Date(), type: 'error' }]);
+        setLogs(p => [...p, { id: generateId(), message: `Upload Failed: ${e.message}`, timestamp: new Date(), type: 'error' }]);
     }
   };
 
@@ -77,9 +81,16 @@ export const DocAnalysisPage: React.FC<DocAnalysisPageProps> = ({ initialFile, o
 
     setChatMessages(p => [...p, { id: generateId(), role: 'user', content: question, timestamp: new Date() }]);
     setIsLoadingChat(true);
-    const answer = await askFollowUp(chatMessages, result.report, question);
-    setChatMessages(p => [...p, { id: generateId(), role: 'assistant', content: answer, timestamp: new Date() }]);
-    setIsLoadingChat(false);
+    
+    try {
+        const answer = await askFollowUp(chatMessages, result.report, question);
+        setChatMessages(p => [...p, { id: generateId(), role: 'assistant', content: answer, timestamp: new Date() }]);
+    } catch (e: any) {
+        setLogs(p => [...p, { id: generateId(), message: `Chat Error: ${e.message}`, timestamp: new Date(), type: 'error' }]);
+        setChatMessages(p => [...p, { id: generateId(), role: 'assistant', content: "Error: Unable to fetch response.", timestamp: new Date() }]);
+    } finally {
+        setIsLoadingChat(false);
+    }
   };
 
   const handleExport = (type: 'pdf' | 'docx') => {
