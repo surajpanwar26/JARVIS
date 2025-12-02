@@ -40,8 +40,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
     <div className="flex flex-col items-center justify-center h-full relative overflow-hidden p-6">
       
       {/* Brand Header */}
-      <div className="z-10 flex flex-col items-center mb-12 animate-fade-in">
-        <JarvisLogo size="lg" className="mb-8 drop-shadow-[0_0_30px_rgba(6,182,212,0.3)]" />
+      <div className="z-10 flex flex-col items-center mb-16 animate-fade-in scale-125">
+        <JarvisLogo size="lg" className="mb-6 drop-shadow-[0_0_50px_rgba(6,182,212,0.6)]" />
         <h1 className="text-6xl md:text-8xl font-bold font-display text-transparent bg-clip-text bg-gradient-to-br from-white via-cyan-100 to-slate-400 tracking-tighter mb-4 text-center">
           JARVIS
         </h1>
@@ -53,13 +53,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       {/* Pill Navigation & Interaction Zone */}
       <div className="z-10 w-full max-w-3xl flex flex-col items-center animate-fade-in animation-delay-200">
         
-        {/* Pill Tabs */}
-        <div className="flex p-1 bg-white/5 backdrop-blur-md rounded-full border border-white/10 mb-8 relative shadow-lg">
+        {/* Pill Tabs - Increased Size */}
+        <div className="flex p-1.5 bg-white/5 backdrop-blur-md rounded-full border border-white/10 mb-10 relative shadow-2xl scale-110">
            {/* Slider Background */}
            <div 
-             className={`absolute top-1 bottom-1 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all duration-300 ease-out z-0`}
+             className={`absolute top-1.5 bottom-1.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all duration-300 ease-out z-0`}
              style={{
-               left: activeTab === 'QUICK' ? '4px' : activeTab === 'DEEP' ? '33.33%' : '66.66%',
+               left: activeTab === 'QUICK' ? '6px' : activeTab === 'DEEP' ? '33.33%' : '66.66%',
                width: 'calc(33.33% - 4px)',
                transform: activeTab !== 'QUICK' ? 'translateX(2px)' : 'translateX(0)'
              }}
@@ -67,21 +67,21 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
 
            <button 
              onClick={() => setActiveTab('QUICK')}
-             className={`relative z-10 px-8 py-3 rounded-full text-sm font-bold uppercase tracking-wider transition-colors w-36 flex items-center justify-center gap-2 ${activeTab === 'QUICK' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
+             className={`relative z-10 px-6 py-4 rounded-full text-sm font-bold uppercase tracking-wider transition-colors w-48 flex items-center justify-center gap-3 ${activeTab === 'QUICK' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
            >
-             <ZapIcon className="w-4 h-4" /> Quick
+             <ZapIcon className="w-5 h-5" /> Quick Research
            </button>
            <button 
              onClick={() => setActiveTab('DEEP')}
-             className={`relative z-10 px-8 py-3 rounded-full text-sm font-bold uppercase tracking-wider transition-colors w-36 flex items-center justify-center gap-2 ${activeTab === 'DEEP' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
+             className={`relative z-10 px-6 py-4 rounded-full text-sm font-bold uppercase tracking-wider transition-colors w-48 flex items-center justify-center gap-3 ${activeTab === 'DEEP' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
            >
-             <LayersIcon className="w-4 h-4" /> Deep
+             <LayersIcon className="w-5 h-5" /> Deep Research
            </button>
            <button 
              onClick={() => setActiveTab('DOCS')}
-             className={`relative z-10 px-8 py-3 rounded-full text-sm font-bold uppercase tracking-wider transition-colors w-36 flex items-center justify-center gap-2 ${activeTab === 'DOCS' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
+             className={`relative z-10 px-6 py-4 rounded-full text-sm font-bold uppercase tracking-wider transition-colors w-48 flex items-center justify-center gap-3 ${activeTab === 'DOCS' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
            >
-             <ActivityIcon className="w-4 h-4" /> Docs
+             <ActivityIcon className="w-5 h-5" /> Doc Analysis
            </button>
         </div>
 
@@ -109,7 +109,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                    disabled={!query.trim()}
                    className="mx-2 px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold rounded-xl hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none disabled:scale-100 shadow-lg border border-white/10 tracking-wide"
                  >
-                   INITIATE
+                   SEARCH
                  </button>
               </div>
             ) : (
