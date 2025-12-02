@@ -2,42 +2,44 @@
 
 An advanced, agentic web research application powered by Google Gemini, Groq, and Tavily.
 
-## Setup Instructions
+## Quick Start
 
 ### 1. Install Dependencies
-Run the following command in the project root:
 ```bash
 npm install
 ```
 
-### 2. Configure Environment Variables
-Create a `.env` file in the root directory (if not already present) and add your API keys:
+### 2. Configure API Keys
+**Crucial Step:** Rename or copy the `.env` file and fill in your keys.
+See **[API_GUIDE.md](./API_GUIDE.md)** for a detailed explanation of which key controls which feature.
+
 ```env
-# Primary LLM (Fastest)
-GROQ_API_KEY=gsk_...
-
-# Primary Search (Best Results)
-TAVILY_API_KEY=tvly-...
-
-# Fallback / Multimodal
-API_KEY=... (Google Gemini API Key)
-HUGGINGFACE_API_KEY=...
-
-# Image Search
-UNSPLASH_ACCESS_KEY=...
+GROQ_API_KEY=...
+TAVILY_API_KEY=...
+GOOGLE_API_KEY=...
 ```
 
 ### 3. Run Locally
-Start the development server:
 ```bash
 npm run dev
 ```
+Open `http://localhost:5173` in your browser.
 
-Open the link shown in your terminal (usually `http://localhost:5173`).
+---
+
+## Python Agents (Optional)
+If you wish to run the backend agents via Python instead of the browser:
+
+1. Install Python requirements:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. Run the LangGraph entry point:
+   ```bash
+   python python_langgraph/main.py
+   ```
 
 ## Architecture
-This project uses:
-- **React 18** + **Vite** for the frontend.
-- **Tailwind CSS** for styling (loaded via CDN).
-- **LangGraph-style Agents** (running in-browser via TypeScript).
-- **Google GenAI SDK** and **Groq API** for intelligence.
+- **Frontend:** React + Vite + Tailwind
+- **Intelligence:** Groq (Llama 3), Google Gemini 2.5 Flash
+- **Search:** Tavily AI

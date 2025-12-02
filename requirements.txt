@@ -1,7 +1,11 @@
 langchain
+langchain-community
+langchain-core
 langchain-google-genai
 langchain-groq
 langchain-huggingface
 langgraph
 tavily-python
 python-dotenv
+pydantic
+typing-extensions

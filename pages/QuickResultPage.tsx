@@ -3,7 +3,7 @@ import { ResearchWorkflow } from '../services/agentSystem';
 import { ResearchLogs } from '../components/ResearchLogs';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { ChatPanel } from '../components/ChatPanel';
-import { ZapIcon, ArrowLeftIcon, DownloadIcon, FileIcon } from '../components/Icons';
+import { ZapIcon, ArrowLeftIcon, DownloadIcon, FileIcon, ActivityIcon } from '../components/Icons';
 import { ResearchStatus, LogEntry, AgentEvent, ResearchResult, ChatMessage } from '../types';
 import { askFollowUp } from '../services/analysisService';
 import { logActivity } from '../services/mongoService';
@@ -101,17 +101,17 @@ export const QuickResultPage: React.FC<QuickResultPageProps> = ({ initialQuery, 
   };
 
   return (
-    <div className="h-full flex flex-col max-w-7xl mx-auto p-6 animate-fade-in font-sans">
+    <div className="h-full flex flex-col max-w-[1800px] mx-auto p-4 animate-fade-in font-sans">
       
       {/* Header */}
-      <div className="mb-6 border-b border-white/10 pb-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 flex flex-col gap-4">
+        <div className="flex items-center justify-between">
           <button 
             onClick={onBack} 
-            className="flex items-center text-slate-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg border border-white/5"
+            className="flex items-center text-slate-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/5 text-sm"
           >
             <ArrowLeftIcon className="w-4 h-4 mr-2" />
-            <span className="text-sm font-medium">New Research</span>
+            <span className="font-medium">New Research</span>
           </button>
           
           <div className="flex items-center space-x-3 bg-amber-500/10 border border-amber-500/20 px-4 py-2 rounded-full">
@@ -144,57 +144,67 @@ export const QuickResultPage: React.FC<QuickResultPageProps> = ({ initialQuery, 
         </div>
 
         {/* Active Topic Indicator */}
-        <div className="flex items-center justify-center">
-            <h2 className="text-2xl font-display text-white text-center">
-               <span className="text-slate-500 mr-3 font-light">Subject:</span>
+        <div className="flex justify-center mt-2">
+            <div className="text-xl font-display text-white border-b border-white/10 pb-2 px-8">
+               <span className="text-slate-500 mr-2 text-sm uppercase tracking-wide">Subject:</span>
                {activeTopic}
-            </h2>
-            {status !== ResearchStatus.IDLE && status !== ResearchStatus.COMPLETED && status !== ResearchStatus.ERROR && (
-               <span className="flex h-3 w-3 relative ml-4">
-                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                 <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
-               </span>
-            )}
+            </div>
         </div>
       </div>
 
-      {/* Split View Content */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-8 overflow-hidden min-h-0">
+      {/* 3-Column Layout: Progress (Left) | Report (Middle) | Chat (Right) */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden min-h-0">
         
-        {/* Left: Report (Wider) */}
-        <div className="lg:col-span-2 glass-card rounded-2xl border border-white/10 overflow-hidden flex flex-col shadow-2xl relative">
-           
-           {/* Report Header */}
-           <div className="px-6 py-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">Intelligence Report</span>
-              {status === ResearchStatus.SEARCHING && <span className="text-xs text-slate-500 animate-pulse">Gathering Intel...</span>}
-              {status === ResearchStatus.SYNTHESIZING && <span className="text-xs text-slate-500 animate-pulse">Writing Brief...</span>}
-           </div>
-
-           {/* Content */}
-           <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-black/20">
-              <MarkdownRenderer content={streamedReport || (status === ResearchStatus.COMPLETED ? result?.report || "" : "")} />
-              {/* Cursor */}
-              {(status === ResearchStatus.SYNTHESIZING || status === ResearchStatus.SEARCHING) && (
-                 <div className="inline-block w-1.5 h-4 bg-amber-500 animate-pulse ml-1 align-middle"></div>
-              )}
-           </div>
-           
-           {/* Mini Logs overlay */}
-           {(status !== ResearchStatus.IDLE && status !== ResearchStatus.COMPLETED) && (
-              <div className="absolute bottom-4 left-4 right-4 bg-black/80 backdrop-blur border border-white/10 rounded-lg p-3 max-h-32 overflow-hidden shadow-xl transition-all">
-                 <div className="text-[10px] text-slate-500 font-bold mb-1 uppercase">Live Agent Stream</div>
-                 <ResearchLogs logs={logs} />
+        {/* Left: Agent Progress */}
+        <div className="lg:col-span-3 flex flex-col overflow-hidden h-full">
+            <div className="flex-1 bg-black/20 rounded-xl border border-white/10 p-3 flex flex-col overflow-hidden shadow-xl">
+              <h3 className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-2 flex items-center">
+                <span className="w-2 h-2 rounded-full bg-amber-500 mr-2 animate-pulse"></span>
+                Agent Progress
+              </h3>
+              <div className="flex-1 overflow-hidden bg-black/40 rounded border border-white/5 p-2">
+                <ResearchLogs logs={logs} />
               </div>
-           )}
+            </div>
+        </div>
+
+        {/* Middle: Report (Wider) */}
+        <div className="lg:col-span-6 flex flex-col overflow-hidden h-full">
+          <div className="flex-1 glass-card rounded-2xl border border-white/10 overflow-hidden flex flex-col shadow-2xl relative">
+             {/* Report Header */}
+             <div className="px-6 py-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">Live Briefing</span>
+                {status === ResearchStatus.SEARCHING && <span className="text-xs text-slate-500 animate-pulse">Gathering Intel...</span>}
+                {status === ResearchStatus.SYNTHESIZING && <span className="text-xs text-slate-500 animate-pulse">Writing Brief...</span>}
+             </div>
+
+             {/* Content */}
+             <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-black/20">
+                {status === ResearchStatus.IDLE && !streamedReport ? (
+                   <div className="flex flex-col items-center justify-center h-full opacity-30 pointer-events-none select-none">
+                      <ZapIcon className="w-16 h-16 mb-4 text-amber-900" />
+                      <div className="text-sm font-mono text-amber-800">INITIALIZING AGENTS...</div>
+                   </div>
+                ) : (
+                   <>
+                      <MarkdownRenderer content={streamedReport || (status === ResearchStatus.COMPLETED ? result?.report || "" : "")} />
+                      {/* Cursor */}
+                      {(status === ResearchStatus.SYNTHESIZING || status === ResearchStatus.SEARCHING) && (
+                         <div className="inline-block w-1.5 h-4 bg-amber-500 animate-pulse ml-1 align-middle"></div>
+                      )}
+                   </>
+                )}
+             </div>
+          </div>
         </div>
 
         {/* Right: Ask Assistant */}
-        <div className="lg:col-span-1 flex flex-col h-full">
-           <div className="flex-1 rounded-2xl overflow-hidden border border-white/10 shadow-xl bg-black/20">
+        <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
+           <div className="flex-1 rounded-2xl overflow-hidden border border-white/10 shadow-xl bg-black/20 h-full">
               <ChatPanel messages={chatMessages} onSendMessage={handleChat} isLoading={isLoadingChat} />
            </div>
         </div>
+
       </div>
     </div>
   );

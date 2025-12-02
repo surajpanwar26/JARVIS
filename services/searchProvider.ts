@@ -103,7 +103,26 @@ const geminiSearch = async (query: string): Promise<SearchResult> => {
   return { text, sources, images };
 };
 
-// --- Unsplash Image Fallback ---
+// --- Pexels Image Provider (High Limit: 200/hr) ---
+const pexelsImages = async (query: string): Promise<string[]> => {
+  if (!hasKey(config.pexelsApiKey)) return [];
+  try {
+    const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=5`, {
+      headers: {
+        Authorization: config.pexelsApiKey!
+      }
+    });
+    if (!res.ok) return [];
+    
+    const data = await res.json();
+    return data.photos.map((img: any) => img.src.medium);
+  } catch (e) {
+    console.warn("Pexels fetch failed", e);
+    return [];
+  }
+};
+
+// --- Unsplash Image Fallback (Limit: 50/hr) ---
 const unsplashImages = async (query: string): Promise<string[]> => {
   if (!hasKey(config.unsplashAccessKey)) return [];
   try {
@@ -141,13 +160,22 @@ export const performSearch = async (query: string): Promise<SearchResult> => {
     }
   }
 
-  if (result.images.length === 0 && hasKey(config.unsplashAccessKey)) {
-    try {
-      const extraImages = await unsplashImages(query);
-      result.images = extraImages;
-    } catch (e) {
-      console.warn("Unsplash fetch failed", e);
+  // --- Image Augmentation ---
+  // If no images found (or few), try external providers with higher limits first
+  if (result.images.length < 3) {
+    let extraImages: string[] = [];
+    
+    // 1. Try Pexels (High Limit)
+    if (hasKey(config.pexelsApiKey)) {
+       extraImages = await pexelsImages(query);
     }
+    
+    // 2. Try Unsplash (Low Limit) if Pexels empty or missing
+    if (extraImages.length === 0 && hasKey(config.unsplashAccessKey)) {
+       extraImages = await unsplashImages(query);
+    }
+
+    result.images = [...result.images, ...extraImages].slice(0, 10);
   }
 
   return result;

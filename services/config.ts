@@ -15,6 +15,7 @@ export const config = {
   tavilyApiKey: getEnv('TAVILY_API_KEY'),
   huggingFaceApiKey: getEnv('HUGGINGFACE_API_KEY'),
   unsplashAccessKey: getEnv('UNSPLASH_ACCESS_KEY'),
+  pexelsApiKey: getEnv('PEXELS_API_KEY'),
   // Support both standard names for Google Key
   googleApiKey: getEnv('API_KEY') || getEnv('GOOGLE_API_KEY'),
 };
