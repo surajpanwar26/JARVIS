@@ -24,7 +24,7 @@ import { v4 as uuidv4 } from 'uuid';
 // --- FRONTEND SERVICE ---
 
 const USER_ID_KEY = 'jarvis_user_id';
-const API_URL = "http://localhost:8001/api";
+const API_URL = "http://localhost:8002/api";
 
 const getUserId = () => {
   let id = localStorage.getItem(USER_ID_KEY);

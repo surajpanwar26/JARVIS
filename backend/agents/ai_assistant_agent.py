@@ -5,7 +5,7 @@ from backend.agents.base_agent import BaseAgent
 from backend.utils import logger
 
 class AIAssistantAgent(BaseAgent):
-    """Agent responsible for answering questions using research context"""
+    """Agent responsible for handling AI Chatbot requests using research context"""
     
     def __init__(self):
         super().__init__("AI Assistant")

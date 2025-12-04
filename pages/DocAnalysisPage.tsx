@@ -182,7 +182,7 @@ export const DocAnalysisPage: React.FC<DocAnalysisPageProps> = ({ initialFile, o
              )}
           </div>
           
-          {/* Right Column: Q&A */}
+          {/* Right Column: AI Chatbot */}
           <div className="flex flex-col h-full">
             {result ? (
                <div className="h-full rounded-xl overflow-hidden shadow-2xl">
@@ -193,7 +193,7 @@ export const DocAnalysisPage: React.FC<DocAnalysisPageProps> = ({ initialFile, o
                  <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
                     <ActivityIcon className="w-8 h-8 opacity-20" />
                  </div>
-                 <p className="text-sm font-mono">Upload a document to enable Q&A</p>
+                 <p className="text-sm font-mono">Upload a document to enable AI Chatbot</p>
                </div>
             )}
           </div>

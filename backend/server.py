@@ -8,9 +8,10 @@ import asyncio
 from dotenv import load_dotenv
 from datetime import datetime
 from pymongo import MongoClient
-from bson import ObjectId
 import time
 import urllib.parse
+from starlette.middleware.sessions import SessionMiddleware
+from starlette.requests import Request
 
 # Load environment variables from .env file
 load_dotenv()
@@ -113,6 +114,9 @@ else:
 # Initialize the FastAPI app
 app = FastAPI(title="JARVIS Research System API")
 
+# Add Session Middleware for OAuth
+app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY", "your-session-secret-key-change-in-production"))
+
 # Add CORS middleware to allow requests from the frontend
 app.add_middleware(
     CORSMiddleware,
@@ -121,6 +125,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Import agents
+from backend.agents.chief_agent import ChiefAgent
+
+# Import auth routes
+from backend.auth import router as auth_router
+app.include_router(auth_router, prefix="/api")
 
 class ResearchRequest(BaseModel):
     topic: str
@@ -146,6 +157,14 @@ class ResearchResult(BaseModel):
 class QuestionResult(BaseModel):
     answer: str
 
+# Pydantic models for LLM
+class LLMRequest(BaseModel):
+    prompt: str
+    system_instruction: Optional[str] = None
+    json_mode: Optional[bool] = False
+    thinking_budget: Optional[int] = None
+    is_report: Optional[bool] = False
+
 # Pydantic models for MongoDB
 class User(BaseModel):
     userId: str
@@ -160,9 +179,6 @@ class ActivityLog(BaseModel):
     documentName: Optional[str] = None
     documentFormat: Optional[str] = None
     metadata: Optional[dict] = None
-
-# Import agents
-from backend.agents.chief_agent import ChiefAgent
 
 @app.get("/")
 async def root():
@@ -295,6 +311,52 @@ async def document_analysis(request: DocumentAnalysisRequest):
         logger.error(f"Unexpected error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Document analysis failed: {str(e)}")
 
+@app.post("/api/llm/generate")
+async def generate_llm_content(request: LLMRequest):
+    """Endpoint to generate content using LLM via backend"""
+    try:
+        logger.info(f"Received LLM generation request")
+        
+        # Import and initialize the LLM provider
+        import os
+        from backend.agents.report_agent import ReportAgent
+        
+        # Use the ReportAgent's method to generate content
+        # This ensures we're using the same backend logic
+        google_api_key = os.getenv("GOOGLE_API_KEY")
+        if not google_api_key:
+            raise HTTPException(status_code=500, detail="GOOGLE_API_KEY not configured")
+        
+        # Create a minimal report agent just for LLM calls
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={google_api_key}"
+        
+        payload = {
+            "contents": [{
+                "parts": [{
+                    "text": request.prompt
+                }]
+            }],
+            "generationConfig": {
+                "temperature": 0.7,
+                "maxOutputTokens": 8192 if request.is_report else 4096
+            }
+        }
+        
+        if request.system_instruction:
+            payload["systemInstruction"] = {"parts": [{"text": request.system_instruction}]}
+        
+        import requests
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        result = response.json()
+        content = result["candidates"][0]["content"]["parts"][0]["text"]
+        
+        return {"content": content}
+        
+    except Exception as e:
+        logger.error(f"LLM generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"LLM generation failed: {str(e)}")
+
 @app.post("/api/logs")
 async def log_activity(activity: ActivityLog):
     """Endpoint to log user activity to MongoDB"""
@@ -352,7 +414,7 @@ async def research_options():
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8001))
+    port = int(os.environ.get("PORT", 8002))
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 # Export the app for uvicorn

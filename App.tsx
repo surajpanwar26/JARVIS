@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HomePage } from './pages/HomePage';
 import { QuickResultPage } from './pages/QuickResultPage';
 import { DeepResearchPage } from './pages/DeepResearchPage';
@@ -12,17 +12,62 @@ interface NavState {
   initialFile?: File;
 }
 
+interface User {
+  email: string;
+  name: string;
+  picture?: string;
+}
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const [navState, setNavState] = useState<NavState>({ page: 'HOME' });
+
+  // Check if user is already authenticated on app load
+  useEffect(() => {
+    // Listen for OAuth success messages
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'oauth-success') {
+        const token = event.data.token;
+        if (token) {
+          localStorage.setItem('authToken', token);
+          setIsAuthenticated(true);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    
+    // Check for existing token in localStorage
+    const existingToken = localStorage.getItem('authToken');
+    if (existingToken) {
+      setIsAuthenticated(true);
+    }
+    
+    // Cleanup listener
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
 
   const handleNavigate = (page: PageView, initialQuery?: string, initialFile?: File) => {
     setNavState({ page, initialQuery, initialFile });
   };
 
   const handleLogin = () => {
-    // Mock login for now
+    // Set authenticated state when called from LoginPage
     setIsAuthenticated(true);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('http://localhost:8002/api/auth/logout');
+      localStorage.removeItem('authToken');
+      setIsAuthenticated(false);
+      setUser(null);
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   if (!isAuthenticated) {
@@ -41,7 +86,7 @@ function App() {
       {/* Main Content View Port */}
       <main className="relative z-10 flex-1 h-screen overflow-hidden">
         {navState.page === 'HOME' && (
-          <HomePage onNavigate={handleNavigate} />
+          <HomePage onNavigate={handleNavigate} onLogout={handleLogout} />
         )}
         
         {navState.page === 'QUICK_RESULT' && (

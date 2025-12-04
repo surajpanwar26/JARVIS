@@ -28,7 +28,13 @@ class HuggingFaceProvider implements LLMProvider {
   }
 
   async generate(params: GenerationParams): Promise<string> {
-    const fullPrompt = `<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n${params.systemInstruction || "You are a helpful assistant."}${params.jsonMode ? " Output strict JSON only." : ""}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n${params.prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n`;
+    const fullPrompt = `<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+
+${params.systemInstruction || "You are a helpful assistant."}${params.jsonMode ? " Output strict JSON only." : ""}<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+${params.prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+`;
 
     try {
       const response = await fetch(this.baseUrl, {
@@ -125,89 +131,46 @@ class GroqProvider implements LLMProvider {
 
 // --- 3. Google Gemini Implementation (PRIMARY) ---
 class GeminiProvider implements LLMProvider {
-  private ai: GoogleGenAI;
   private apiKey: string;
   private model = "gemini-2.5-flash";
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
-    this.ai = new GoogleGenAI({ apiKey });
   }
 
   async generate(params: GenerationParams): Promise<string> {
     try {
-      // 1. Try SDK Method
-      const response = await this.ai.models.generateContent({
-        model: this.model,
-        contents: params.prompt,
-        config: {
-          systemInstruction: params.systemInstruction,
-          responseMimeType: params.jsonMode ? "application/json" : "text/plain",
-          thinkingConfig: params.thinkingBudget ? { thinkingBudget: params.thinkingBudget } : undefined
-        }
+      // Instead of making direct calls to Google API, use our backend endpoint
+      const response = await fetch("http://localhost:8002/api/llm/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          prompt: params.prompt,
+          system_instruction: params.systemInstruction,
+          json_mode: params.jsonMode,
+          thinking_budget: params.thinkingBudget
+        })
       });
-      return response.text || "";
-    } catch (e: any) {
-      console.warn("Gemini SDK Failed, attempting REST API Fallback...", e.message);
       
-      // 2. Fallback: Direct REST API (Bypasses SDK fetch issues locally)
-      if (e.message && (e.message.includes("fetch") || e.message.includes("network"))) {
-         try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
-            
-            const rawBody: any = {
-              contents: [{ parts: [{ text: params.prompt }] }],
-              generationConfig: {
-                 responseMimeType: params.jsonMode ? "application/json" : "text/plain"
-              }
-            };
-
-            if (params.systemInstruction) {
-              rawBody.systemInstruction = { parts: [{ text: params.systemInstruction }] };
-            }
-
-            const fallbackResp = await fetch(url, {
-               method: 'POST',
-               headers: { 'Content-Type': 'application/json' },
-               body: JSON.stringify(rawBody)
-            });
-
-            if (!fallbackResp.ok) {
-               const errText = await fallbackResp.text();
-               throw new Error(`REST Fallback Failed: ${fallbackResp.status} - ${errText}`);
-            }
-
-            const data = await fallbackResp.json();
-            return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-         } catch (fallbackError: any) {
-            console.error("Critical: Both SDK and REST Fallback failed.");
-            throw new Error(`Gemini Generation Failed: ${fallbackError.message}`);
-         }
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Backend LLM API Error: ${response.status} - ${errorText}`);
       }
       
-      throw e;
+      const data = await response.json();
+      return data.content || "";
+    } catch (e: any) {
+      console.error("Gemini Generation Failed:", e.message);
+      throw new Error(`Gemini Generation Failed: ${e.message}`);
     }
   }
 
   async *generateStream(params: GenerationParams): AsyncGenerator<string, void, unknown> {
-    try {
-      const result = await this.ai.models.generateContentStream({
-        model: this.model,
-        contents: params.prompt,
-        config: {
-          systemInstruction: params.systemInstruction,
-          thinkingConfig: params.thinkingBudget ? { thinkingBudget: params.thinkingBudget } : undefined
-        }
-      });
-
-      for await (const chunk of result) {
-        if (chunk.text) yield chunk.text;
-      }
-    } catch (e) {
-      console.error("Gemini Stream Error:", e);
-      throw e;
-    }
+    // For streaming, we'll just return the full content since our backend doesn't support streaming yet
+    const text = await this.generate(params);
+    yield text;
   }
 }
 

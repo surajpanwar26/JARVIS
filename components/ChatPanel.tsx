@@ -30,7 +30,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, i
     <div className="flex flex-col h-full bg-black/20 rounded-xl border border-white/10 overflow-hidden">
       <div className="p-4 border-b border-white/10 bg-white/5 flex items-center">
         <MessageSquareIcon className="w-4 h-4 text-cyan-400 mr-2" />
-        <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider font-mono">Q&A Module</h3>
+        <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider font-mono">AI Chatbot</h3>
       </div>
       
       <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar" ref={scrollRef}>

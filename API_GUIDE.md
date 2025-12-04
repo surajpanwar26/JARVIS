@@ -45,6 +45,13 @@ UNSPLASH_ACCESS_KEY=
 # --- 5. FALLBACK ---
 # Used if Groq is down.
 HUGGINGFACE_API_KEY=
+
+# --- 6. AUTHENTICATION ---
+# Google OAuth credentials (required for real OAuth login)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+SESSION_SECRET_KEY=your-session-secret-key-change-in-production
+JWT_SECRET_KEY=your-jwt-secret-key-change-in-production
 ```
 
 ---
@@ -113,7 +120,35 @@ The system needs to access the live internet.
 5. Create a new token
 6. Copy and paste it into your `.env` file as `HUGGINGFACE_API_KEY=YOUR_KEY_HERE`
 
-## 4. Docker Environment Variables
+### Google OAuth Credentials
+To enable real Google OAuth login:
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the Google+ API
+4. Go to "Credentials" in the sidebar
+5. Click "Create Credentials" > "OAuth client ID"
+6. Select "Web application" as the application type
+7. Add the following URIs:
+   - Authorized JavaScript origins: `http://localhost:5179`
+   - Authorized redirect URIs: `http://localhost:5179/api/auth/callback`
+8. Copy the Client ID and Client Secret
+9. Paste them into your `.env` file as:
+   - `GOOGLE_CLIENT_ID=your_client_id_here`
+   - `GOOGLE_CLIENT_SECRET=your_client_secret_here`
+
+## 4. Authentication Endpoints
+
+The JARVIS system now includes real OAuth authentication with the following endpoints:
+
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `/api/auth/login` | GET | Initiates Google OAuth login flow |
+| `/api/auth/callback` | GET | Handles Google OAuth callback |
+| `/api/auth/logout` | GET | Logs out the current user |
+| `/api/auth/user` | GET | Gets current user information |
+
+## 5. Docker Environment Variables
 When running with Docker, you can pass these environment variables directly:
 
 ```bash

@@ -7,6 +7,32 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+  const handleGoogleLogin = () => {
+    // Open OAuth in a popup window instead of redirecting
+    const width = 600;
+    const height = 700;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+    
+    const popup = window.open(
+      'http://localhost:8002/api/auth/login',
+      'Google Login',
+      `width=${width},height=${height},top=${top},left=${left}`
+    );
+    
+    // Poll for popup closure and check for auth token
+    const pollTimer = setInterval(() => {
+      if (popup?.closed) {
+        clearInterval(pollTimer);
+        // Check if we got a token
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          onLogin();
+        }
+      }
+    }, 500);
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen relative overflow-hidden bg-[#0B0F19]">
       
@@ -28,11 +54,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold font-display text-white mb-2 tracking-tight">Welcome to JARVIS</h1>
-            <p className="text-slate-400 font-mono text-sm">Autonomous Neural Research System</p>
+            <p className="text-slate-400 font-mono text-sm">AI Research Assistant</p>
           </div>
 
           <button
-            onClick={onLogin}
+            onClick={handleGoogleLogin}
             className="w-full flex items-center justify-center gap-3 bg-white text-slate-900 font-bold py-3.5 px-6 rounded-xl hover:bg-slate-100 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg group relative overflow-hidden"
           >
              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-200/50 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
@@ -41,7 +67,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           </button>
 
           <div className="mt-8 text-center">
-             <p className="text-[10px] text-slate-600 uppercase tracking-widest font-bold">Secure Access Protocol</p>
+             <p className="text-[10px] text-slate-600 uppercase tracking-widest font-bold">Made with ❤️ by Suraj Panwar</p>
           </div>
         </div>
       </div>

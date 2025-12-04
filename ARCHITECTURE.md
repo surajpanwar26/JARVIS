@@ -12,7 +12,7 @@ The system is built on a **Multi-Agent Architecture** powered by Google Gemini 2
 *   **Image Agent**: Extracts and processes visual assets
 *   **Source Agent**: Processes and validates sources
 *   **Report Agent**: Synthesizes structured reports using Google Gemini
-*   **AI Assistant Agent**: Handles Q&A functionality
+*   **AI Assistant Agent**: Handles AI Chatbot functionality
 *   **Document Analyzer Agent**: Analyzes uploaded documents
 *   **UI Client**: A React-based interface that visualizes the agent's thought process in real-time
 
@@ -30,7 +30,7 @@ The Chief Agent determines the type of request and routes it to the appropriate 
    - Source Agent processes and validates sources
    - Report Agent generates the final report using Google Gemini
 
-2. **Q&A Requests**:
+2. **AI Chatbot Requests**:
    - AI Assistant Agent answers questions using the research context
 
 3. **Document Analysis Requests**:

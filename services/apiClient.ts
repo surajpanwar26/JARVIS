@@ -1,6 +1,6 @@
 import { ResearchResult, ChatMessage } from "../types";
 
-const API_URL = "http://localhost:8001/api";
+const API_URL = "http://localhost:8002/api";
 
 export const api = {
   health: async () => {
@@ -68,7 +68,7 @@ export const api = {
       });
       
       if (!response.ok) {
-         let errorMessage = "Q&A failed";
+         let errorMessage = "AI Chatbot failed";
          try {
             const errorData = await response.json();
             if (errorData.detail) errorMessage = errorData.detail;
@@ -80,7 +80,7 @@ export const api = {
       const data = await response.json();
       return data.answer;
     } catch (error) {
-      console.error("Q&A API Error:", error);
+      console.error("AI Chatbot API Error:", error);
       throw error;
     }
   }

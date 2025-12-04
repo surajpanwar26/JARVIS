@@ -25,10 +25,10 @@ class ChiefAgent(BaseAgent):
         logger.info(f"[{self.name}] Starting research workflow")
         
         try:
-            # Check if this is a Q&A request
+            # Check if this is an AI Chatbot request
             if state.get("question"):
-                # For Q&A, we only need the AI Assistant agent
-                logger.info(f"[{self.name}] Processing Q&A request")
+                # For AI Chatbot, we only need the AI Assistant agent
+                logger.info(f"[{self.name}] Processing AI Chatbot request")
                 state = await self.ai_assistant.execute(state)
             # Check if this is a document analysis request
             elif state.get("file_base64"):

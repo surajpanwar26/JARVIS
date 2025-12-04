@@ -6,16 +6,10 @@ import { getLLMProvider } from "./llmProvider";
  */
 export const analyzeDocument = async (fileBase64: string, mimeType: string): Promise<ResearchResult> => {
   try {
-    // Use backend API for document analysis
-    const response = await fetch("http://localhost:8001/api/document-analysis", {
+    const response = await fetch("http://localhost:8002/api/document-analysis", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        file_base64: fileBase64,
-        mime_type: mimeType,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ file_base64: fileBase64, mime_type: mimeType })
     });
 
     if (!response.ok) {
@@ -36,7 +30,7 @@ export const analyzeDocument = async (fileBase64: string, mimeType: string): Pro
 };
 
 /**
- * Chat / Q&A Service
+ * Chat / AI Chatbot Service
  */
 export const askFollowUp = async (
   history: ChatMessage[], 
@@ -44,8 +38,8 @@ export const askFollowUp = async (
   question: string
 ): Promise<string> => {
   try {
-    // Use backend API for Q&A
-    const response = await fetch("http://localhost:8001/api/question", {
+    // Use backend API for AI Chatbot
+    const response = await fetch("http://localhost:8002/api/question", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -58,7 +52,7 @@ export const askFollowUp = async (
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.detail || "Q&A failed");
+      throw new Error(errorData.detail || "AI Chatbot failed");
     }
 
     const result = await response.json();
