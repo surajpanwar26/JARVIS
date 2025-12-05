@@ -120,10 +120,11 @@ app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY",
 # Add CORS middleware to allow requests from the frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify exact origins
+    allow_origins=["https://jarvis-frontend-bheu.onrender.com", "http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Access-Control-Allow-Origin"],
 )
 
 # Import agents
@@ -183,6 +184,25 @@ class ActivityLog(BaseModel):
 @app.get("/")
 async def root():
     return {"message": "JARVIS Research System Backend is running"}
+
+@app.get("/health")
+async def health_check():
+    import os
+    
+    # Check if required API keys are present
+    google_key = bool(os.getenv("GOOGLE_API_KEY"))
+    groq_key = bool(os.getenv("GROQ_API_KEY"))
+    tavily_key = bool(os.getenv("TAVILY_API_KEY"))
+    
+    return {
+        "status": "healthy" if all([google_key, groq_key, tavily_key]) else "degraded",
+        "api_keys": {
+            "google": google_key,
+            "groq": groq_key,
+            "tavily": tavily_key
+        },
+        "mongodb": mongo_client is not None
+    }
 
 async def perform_research(topic: str, is_deep: bool):
     """Perform research using the agent architecture"""
@@ -269,7 +289,7 @@ async def analyze_document(file_base64: str, mime_type: str):
         )
         
     except Exception as e:
-        logger.error(f"Document analysis error: {str(e)}")
+        logger.error(f"Document analysis error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Document analysis failed: {str(e)}")
 
 @app.post("/api/research")
