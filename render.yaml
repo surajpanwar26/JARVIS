@@ -36,3 +36,6 @@ services:
     envVars:
       - key: REACT_APP_API_URL
         sync: false
+
+# Prevent Docker autodetection
+autoDeploy: false
