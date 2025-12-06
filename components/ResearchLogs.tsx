@@ -23,7 +23,7 @@ export const ResearchLogs: React.FC<ResearchLogsProps> = ({ logs }) => {
           <span className="text-slate-700 mr-2 shrink-0 select-none w-14">
             {log.timestamp.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </span>
-          <span className={`break-words flex-1
+          <span className={`break-words flex-1 overflow-x-auto
             ${log.type === 'error' ? 'text-red-400' : ''}
             ${log.type === 'success' ? 'text-emerald-400' : ''}
             ${log.type === 'info' ? 'text-cyan-300/80' : ''}
