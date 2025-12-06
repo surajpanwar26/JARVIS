@@ -62,6 +62,7 @@ function App() {
   const handleLogout = async () => {
     try {
       // Use environment variable for API URL with fallback to localhost
+      // @ts-ignore: ImportMeta.env is not properly typed in TypeScript
       const apiUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:8002';
       await fetch(`${apiUrl}/api/auth/logout`);
       localStorage.removeItem('authToken');
