@@ -132,7 +132,7 @@ class GroqProvider implements LLMProvider {
 // --- 3. Google Gemini Implementation (PRIMARY) ---
 class GeminiProvider implements LLMProvider {
   private apiKey: string;
-  private model = "gemini-2.5-flash";
+  private model = "gemini-1.5-flash";
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;

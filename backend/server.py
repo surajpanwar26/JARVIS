@@ -362,7 +362,7 @@ async def generate_llm_content(request: LLMRequest):
         if google_api_key:
             providers.append({
                 "name": "Google Gemini",
-                "url": f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={google_api_key}",
+                "url": f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={google_api_key}",
                 "payload": {
                     "contents": [{
                         "parts": [{
