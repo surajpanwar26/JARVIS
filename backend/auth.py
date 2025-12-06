@@ -135,8 +135,8 @@ def generate_user_id(email: str) -> str:
 @router.get("/login")
 async def login_via_google(request: Request):
     """Initiate Google OAuth login"""
-    # Use the full callback URL directly instead of url_for
-    redirect_uri = "http://localhost:8002/api/auth/callback"
+    # Use environment variable for redirect URI with fallback to localhost
+    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8002/api/auth/callback")
     # Force account selection by adding prompt parameter
     return await oauth.google.authorize_redirect(
         request, 

@@ -14,8 +14,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     const left = window.screen.width / 2 - width / 2;
     const top = window.screen.height / 2 - height / 2;
     
+    // Use environment variable for API URL with fallback to localhost
+    // @ts-ignore: ImportMeta.env is not properly typed in TypeScript
+    const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8002';
     const popup = window.open(
-      'http://localhost:8002/api/auth/login',
+      `${apiUrl}/api/auth/login`,
       'Google Login',
       `width=${width},height=${height},top=${top},left=${left}`
     );

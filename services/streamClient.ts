@@ -1,12 +1,23 @@
 import { AgentEvent } from "../types";
+import { getApiBaseUrl } from "./config";
 
 export class StreamClient {
   private ws: WebSocket | null = null;
-  private url = "ws://localhost:8000/ws/research";
+  private url: string;
   private onMessage: (event: AgentEvent) => void;
 
   constructor(onMessage: (event: AgentEvent) => void) {
     this.onMessage = onMessage;
+    // Convert HTTP URL to WebSocket URL
+    const baseUrl = getApiBaseUrl();
+    if (baseUrl.startsWith('https://')) {
+      this.url = baseUrl.replace('https://', 'wss://') + '/ws/research';
+    } else if (baseUrl.startsWith('http://')) {
+      this.url = baseUrl.replace('http://', 'ws://') + '/ws/research';
+    } else {
+      // Fallback for cases where baseUrl doesn't include protocol
+      this.url = `ws://${baseUrl}/ws/research`;
+    }
   }
 
   connect() {

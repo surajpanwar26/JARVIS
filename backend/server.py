@@ -117,10 +117,16 @@ app = FastAPI(title="JARVIS Research System API")
 # Add Session Middleware for OAuth
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY", "your-session-secret-key-change-in-production"))
 
+import os
+
 # Add CORS middleware to allow requests from the frontend
+# Use environment variable for frontend URL with fallbacks
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+render_frontend_url = "https://jarvis-frontend-bheu.onrender.com"
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://jarvis-frontend-bheu.onrender.com", "http://localhost:5173"],
+    allow_origins=[render_frontend_url, frontend_url, "http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -61,7 +61,9 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await fetch('http://localhost:8002/api/auth/logout');
+      // Use environment variable for API URL with fallback to localhost
+      const apiUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:8002';
+      await fetch(`${apiUrl}/api/auth/logout`);
       localStorage.removeItem('authToken');
       setIsAuthenticated(false);
       setUser(null);
