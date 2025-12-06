@@ -342,6 +342,14 @@ async def generate_llm_content(request: LLMRequest):
     try:
         logger.info(f"Received LLM generation request")
         
+        # Validate request
+        if not request.prompt or len(request.prompt.strip()) == 0:
+            raise HTTPException(status_code=400, detail="Prompt is required")
+        
+        # Check prompt length (Gemini has limits)
+        if len(request.prompt) > 100000:  # Rough limit, actual limit may vary
+            logger.warning(f"Prompt is very long ({len(request.prompt)} chars), may cause issues")
+        
         # Import and initialize the LLM provider
         import os
         import requests
@@ -423,11 +431,17 @@ async def generate_llm_content(request: LLMRequest):
         for provider in providers:
             try:
                 logger.info(f"Trying LLM provider: {provider['name']}")
+                # Log the request for debugging
+                logger.debug(f"Request payload for {provider['name']}: {provider['payload']}")
                 response = requests.post(
                     provider["url"],
                     json=provider["payload"],
                     headers=provider["headers"]
                 )
+                # Log response status for debugging
+                logger.debug(f"Response status for {provider['name']}: {response.status_code}")
+                if not response.ok:
+                    logger.error(f"Provider {provider['name']} failed with status {response.status_code}: {response.text}")
                 response.raise_for_status()
                 
                 # Parse response based on provider
@@ -446,9 +460,16 @@ async def generate_llm_content(request: LLMRequest):
                 logger.info(f"Successfully generated content using {provider['name']}")
                 return {"content": content, "provider": provider["name"]}
                 
+            except requests.exceptions.RequestException as e:
+                last_error = e
+                logger.warning(f"Network error with {provider['name']}: {str(e)}")
+                continue
             except Exception as e:
                 last_error = e
                 logger.warning(f"Failed to generate content with {provider['name']}: {str(e)}")
+                # Log the full traceback for debugging
+                import traceback
+                logger.warning(f"Full traceback: {traceback.format_exc()}")
                 continue
         
         # If we get here, all providers failed
