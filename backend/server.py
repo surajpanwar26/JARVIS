@@ -342,14 +342,6 @@ async def generate_llm_content(request: LLMRequest):
     try:
         logger.info(f"Received LLM generation request")
         
-        # Validate request
-        if not request.prompt or len(request.prompt.strip()) == 0:
-            raise HTTPException(status_code=400, detail="Prompt is required")
-        
-        # Check prompt length (Gemini has limits)
-        if len(request.prompt) > 100000:  # Rough limit, actual limit may vary
-            logger.warning(f"Prompt is very long ({len(request.prompt)} chars), may cause issues")
-        
         # Import and initialize the LLM provider
         import os
         import requests
@@ -362,7 +354,7 @@ async def generate_llm_content(request: LLMRequest):
         if google_api_key:
             providers.append({
                 "name": "Google Gemini",
-                "url": f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={google_api_key}",
+                "url": f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={google_api_key}",
                 "payload": {
                     "contents": [{
                         "parts": [{
@@ -431,60 +423,32 @@ async def generate_llm_content(request: LLMRequest):
         for provider in providers:
             try:
                 logger.info(f"Trying LLM provider: {provider['name']}")
-                # Log the request for debugging
-                logger.debug(f"Request payload for {provider['name']}: {provider['payload']}")
                 response = requests.post(
                     provider["url"],
                     json=provider["payload"],
                     headers=provider["headers"]
                 )
-                # Log response status for debugging
-                logger.debug(f"Response status for {provider['name']}: {response.status_code}")
-                if not response.ok:
-                    logger.error(f"Provider {provider['name']} failed with status {response.status_code}: {response.text}")
                 response.raise_for_status()
                 
                 # Parse response based on provider
                 if provider["name"] == "Google Gemini":
                     result = response.json()
-                    # Log the full response for debugging
-                    logger.debug(f"Gemini response: {result}")
-                    # Check if we have candidates in the response
-                    if "candidates" not in result or len(result["candidates"]) == 0:
-                        raise ValueError("No candidates in Gemini response")
-                    if "content" not in result["candidates"][0] or "parts" not in result["candidates"][0]["content"]:
-                        raise ValueError("Invalid response structure from Gemini")
                     content = result["candidates"][0]["content"]["parts"][0]["text"]
                 elif provider["name"] == "Groq":
                     result = response.json()
-                    # Log the full response for debugging
-                    logger.debug(f"Groq response: {result}")
-                    if "choices" not in result or len(result["choices"]) == 0:
-                        raise ValueError("No choices in Groq response")
-                    if "message" not in result["choices"][0] or "content" not in result["choices"][0]["message"]:
-                        raise ValueError("Invalid response structure from Groq")
                     content = result["choices"][0]["message"]["content"]
                 elif provider["name"] == "Hugging Face":
                     result = response.json()
-                    # Log the full response for debugging
-                    logger.debug(f"Hugging Face response: {result}")
-                    content = result[0]["generated_text"] if isinstance(result, list) and len(result) > 0 and "generated_text" in result[0] else result.get("generated_text", "") if isinstance(result, dict) else ""
+                    content = result[0]["generated_text"] if isinstance(result, list) else result.get("generated_text", "")
                 else:
                     content = response.text
                 
                 logger.info(f"Successfully generated content using {provider['name']}")
                 return {"content": content, "provider": provider["name"]}
                 
-            except requests.exceptions.RequestException as e:
-                last_error = e
-                logger.warning(f"Network error with {provider['name']}: {str(e)}")
-                continue
             except Exception as e:
                 last_error = e
                 logger.warning(f"Failed to generate content with {provider['name']}: {str(e)}")
-                # Log the full traceback for debugging
-                import traceback
-                logger.warning(f"Full traceback: {traceback.format_exc()}")
                 continue
         
         # If we get here, all providers failed

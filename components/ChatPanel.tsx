@@ -42,7 +42,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, i
         ) : (
           messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] rounded-lg p-3 text-sm leading-relaxed overflow-x-auto ${
+              <div className={`max-w-[85%] rounded-lg p-3 text-sm leading-relaxed ${
                 msg.role === 'user' 
                   ? 'bg-cyan-600/20 border border-cyan-500/30 text-cyan-100 rounded-br-none' 
                   : 'bg-white/10 border border-white/10 text-slate-200 rounded-bl-none'
@@ -69,7 +69,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSendMessage, i
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask a follow-up question..."
             disabled={isLoading}
-            className="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 pl-4 pr-10 text-sm text-white placeholder-slate-500 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all truncate"
+            className="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 pl-4 pr-10 text-sm text-white placeholder-slate-500 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all"
           />
           <button 
             type="submit"
