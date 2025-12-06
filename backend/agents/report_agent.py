@@ -70,7 +70,7 @@ Provide a well-structured markdown report with appropriate headings and sections
             }],
             "generationConfig": {
                 "temperature": 0.7,
-                "maxOutputTokens": 8192 if is_deep else 4096
+                "maxOutputTokens": 4096 if is_deep else 2048
             }
         }
         

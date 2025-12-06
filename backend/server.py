@@ -363,7 +363,7 @@ async def generate_llm_content(request: LLMRequest):
                     }],
                     "generationConfig": {
                         "temperature": 0.7,
-                        "maxOutputTokens": 8192 if request.is_report else 4096
+                        "maxOutputTokens": 4096 if request.is_report else 2048
                     }
                 },
                 "headers": {"Content-Type": "application/json"}
@@ -384,7 +384,8 @@ async def generate_llm_content(request: LLMRequest):
                         {"role": "system", "content": request.system_instruction or "You are a helpful research assistant."},
                         {"role": "user", "content": request.prompt}
                     ],
-                    "temperature": 0.5
+                    "temperature": 0.5,
+                    "max_tokens": 4096 if request.is_report else 2048
                 },
                 "headers": {
                     "Authorization": f"Bearer {groq_api_key}",
@@ -404,7 +405,7 @@ async def generate_llm_content(request: LLMRequest):
                 "payload": {
                     "inputs": f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{request.system_instruction or 'You are a helpful assistant.'}{'' if not request.json_mode else ' Output strict JSON only.'}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{request.prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
                     "parameters": {
-                        "max_new_tokens": 4096,
+                        "max_new_tokens": 2048,
                         "return_full_text": False,
                         "temperature": 0.7
                     }

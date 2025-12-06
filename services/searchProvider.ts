@@ -77,7 +77,10 @@ const tavilySearch = async (query: string): Promise<SearchResult> => {
     })
   });
 
-  if (!response.ok) throw new Error("Tavily API Error");
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Tavily API Error: ${response.status} - ${errorText}`);
+  }
   const data = await response.json();
 
   let text = data.answer || "";
@@ -116,8 +119,8 @@ export const performSearch = async (query: string): Promise<SearchResult> => {
   if (hasKey(config.tavilyApiKey)) {
     try {
       result = await tavilySearch(query);
-    } catch (e) {
-      console.warn("Tavily failed, failing over to Gemini");
+    } catch (e: any) {
+      console.warn("Tavily failed, failing over to Gemini:", e?.message || String(e));
       result = await geminiSearch(query);
     }
   } else {
