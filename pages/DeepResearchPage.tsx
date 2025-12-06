@@ -155,7 +155,7 @@ export const DeepResearchPage: React.FC<DeepResearchPageProps> = ({ initialQuery
           
           <div className="flex justify-center mt-2">
             <div className="text-xl font-display text-white border-b border-white/10 pb-2 px-8">
-               <span className="text-slate-500 mr-2 text-sm uppercase tracking-wide">Directive:</span>
+               <span className="text-slate-500 mr-2 text-sm uppercase tracking-wide">Topic:</span>
                {query}
             </div>
           </div>
@@ -178,7 +178,7 @@ export const DeepResearchPage: React.FC<DeepResearchPageProps> = ({ initialQuery
              </div>
              
              {/* Chat */}
-             <div className="h-1/2 flex flex-col">
+             <div className="h-1/2 flex flex-col sticky bottom-4">
                 <ChatPanel messages={chatMessages} onSendMessage={handleChat} isLoading={isLoadingChat} />
              </div>
           </div>
@@ -188,7 +188,7 @@ export const DeepResearchPage: React.FC<DeepResearchPageProps> = ({ initialQuery
              <div className="flex-1 flex flex-col glass-card rounded-xl border border-white/10 overflow-hidden shadow-2xl">
                 <div className="flex border-b border-white/10 bg-white/5 backdrop-blur-xl z-10">
                    <button onClick={() => setActiveTab('report')} className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'report' ? 'text-cyan-400 border-b-2 border-cyan-400 bg-white/5' : 'text-slate-500 hover:text-slate-300'}`}>Live Report</button>
-                   <button onClick={() => setActiveTab('images')} className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'images' ? 'text-cyan-400 border-b-2 border-cyan-400 bg-white/5' : 'text-slate-500 hover:text-slate-300'}`}>Visual Assets ({result?.images?.length || 0})</button>
+                   <button onClick={() => setActiveTab('images')} className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'images' ? 'text-cyan-400 border-b-2 border-cyan-400 bg-white/5' : 'text-slate-500 hover:text-slate-300'}`}>Related Images ({result?.images?.length || 0})</button>
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-black/20 relative">
@@ -234,7 +234,7 @@ export const DeepResearchPage: React.FC<DeepResearchPageProps> = ({ initialQuery
           <div className="col-span-3 flex flex-col overflow-hidden">
              <div className="glass-card rounded-xl border border-white/10 flex flex-col h-full overflow-hidden">
                 <div className="p-3 border-b border-white/10 bg-white/5 text-xs font-bold text-emerald-400 uppercase tracking-widest flex items-center">
-                   <GlobeIcon className="w-3 h-3 mr-2" /> Indexed Sources ({result?.sources?.length || 0})
+                   <GlobeIcon className="w-3 h-3 mr-2" /> Sources ({result?.sources?.length || 0})
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar bg-black/10">
                    {(result?.sources || []).map((s, i) => (

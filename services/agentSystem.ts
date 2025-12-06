@@ -70,8 +70,8 @@ class ResearcherAgent extends BaseAgent {
 
     this.emit({ type: 'agent_action', agentName: 'Researcher', message: 'Deploying autonomous scrapers...', timestamp: new Date() });
 
-    for (const query of state.plan) {
-      this.emit({ type: 'search', agentName: 'Researcher', message: `Gathering intelligence: "${query}"`, timestamp: new Date() });
+    for (const [index, query] of state.plan.entries()) {
+      this.emit({ type: 'search', agentName: 'Researcher', message: `Gathering intelligence (${index + 1}/${state.plan.length}): "${query}"`, timestamp: new Date() });
       
       try {
         const results = await performSearch(query);
@@ -98,6 +98,7 @@ class ResearcherAgent extends BaseAgent {
       }
     }
 
+    this.emit({ type: 'agent_action', agentName: 'Researcher', message: `Data collection complete. Indexed ${uniqueSources.size} sources and ${uniqueImages.size} assets.`, timestamp: new Date() });
     return { 
       ...state, 
       context: newContext, 
@@ -133,7 +134,12 @@ class WriterAgent extends BaseAgent {
     
     try {
       const stream = llm.generateStream({
-        prompt: `Topic: ${state.topic}\n\nContext Data:\n${state.context.join('\n\n')}\n\nTask: Compile a structured report. Use Markdown.`,
+        prompt: `Topic: ${state.topic}
+
+Context Data:
+${state.context.join('\n\n')}
+
+Task: Compile a structured report. Use Markdown.`,
         systemInstruction: `You are the ${role}. Structure the report professionally.`,
         thinkingBudget: state.isDeep ? 1024 : undefined 
       });
@@ -144,13 +150,18 @@ class WriterAgent extends BaseAgent {
         this.emit({ type: 'report_chunk', agentName: 'Writer', message: 'typing...', data: chunk, timestamp: new Date() });
       }
 
+      this.emit({ type: 'agent_action', agentName: 'Writer', message: 'Report drafting complete.', timestamp: new Date() });
       return { ...state, report: fullReport };
     } catch (e: any) {
       console.error(e);
       // Detailed error message in UI
       const errDetail = e.message || JSON.stringify(e);
       this.emit({ type: 'error', message: `Drafting failed: ${errDetail}`, timestamp: new Date() });
-      return { ...state, report: `**Report Generation Failed**\n\nError: ${errDetail}\n\nPlease check API keys and try again.` };
+      return { ...state, report: `**Report Generation Failed**
+
+Error: ${errDetail}
+
+Please check API keys and try again.` };
     }
   }
 }

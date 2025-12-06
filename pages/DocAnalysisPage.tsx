@@ -188,7 +188,7 @@ export const DocAnalysisPage: React.FC<DocAnalysisPageProps> = ({ initialFile, o
           </div>
           
           {/* Right Column: AI Chatbot */}
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full sticky bottom-4">
             {result ? (
                <div className="h-full rounded-xl overflow-hidden shadow-2xl">
                  <ChatPanel messages={chatMessages} onSendMessage={handleChat} isLoading={isLoadingChat} />

@@ -218,7 +218,7 @@ export const QuickResultPage: React.FC<QuickResultPageProps> = ({ initialQuery, 
 
         {/* Right: Ask Assistant */}
         <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
-           <div className="flex-1 rounded-2xl overflow-hidden border border-white/10 shadow-xl bg-black/20 h-full">
+           <div className="flex-1 rounded-2xl overflow-hidden border border-white/10 shadow-xl bg-black/20 h-full sticky top-4">
               <ChatPanel messages={chatMessages} onSendMessage={handleChat} isLoading={isLoadingChat} />
            </div>
         </div>
