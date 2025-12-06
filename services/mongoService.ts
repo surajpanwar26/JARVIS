@@ -24,7 +24,7 @@ import { v4 as uuidv4 } from 'uuid';
 // --- FRONTEND SERVICE ---
 
 const USER_ID_KEY = 'jarvis_user_id';
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8002/api";
+import { getApiUrl } from "./config";
 
 const getUserId = () => {
   let id = localStorage.getItem(USER_ID_KEY);
@@ -53,7 +53,7 @@ export const logActivity = async (activity: Omit<ActivityLog, 'timestamp'>) => {
 
   // 1. Send to backend MongoDB
   try {
-    const response = await fetch(`${API_URL}/logs`, {
+    const response = await fetch(getApiUrl('/api/logs'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -84,7 +84,7 @@ export const getUserHistory = async () => {
   
   // Try to get history from backend MongoDB first
   try {
-    const response = await fetch(`${API_URL}/user-history/${userId}`);
+    const response = await fetch(getApiUrl(`/api/user-history/${userId}`));
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

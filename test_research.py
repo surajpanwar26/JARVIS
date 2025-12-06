@@ -1,8 +1,13 @@
 import requests
 import json
 
+import os
+
 # Test the research endpoint
-url = "http://localhost:8002/api/research"
+# Use environment variable for API URL with fallback to localhost
+default_url = "http://localhost:8002"
+api_url = os.environ.get('API_URL', default_url)
+url = f"{api_url}/api/research"
 payload = {
     "topic": "artificial intelligence",
     "is_deep": False

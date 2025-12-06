@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { config, hasKey, logConfigStatus } from "./config";
+import { config, hasKey, logConfigStatus, getApiUrl } from "./config";
 
 // Initialize logging once
 logConfigStatus();
@@ -141,7 +141,7 @@ class GeminiProvider implements LLMProvider {
   async generate(params: GenerationParams): Promise<string> {
     try {
       // Instead of making direct calls to Google API, use our backend endpoint
-      const response = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:8002"}/api/llm/generate`, {
+      const response = await fetch(getApiUrl('/api/llm/generate'), {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

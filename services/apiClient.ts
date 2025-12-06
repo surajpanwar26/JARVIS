@@ -1,6 +1,5 @@
 import { ResearchResult, ChatMessage } from "../types";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8002/api";
+import { getApiUrl } from "./config";
 
 export const api = {
   health: async () => {
@@ -9,7 +8,7 @@ export const api = {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 2000);
       
-      const res = await fetch(`${API_URL}/research`, { 
+      const res = await fetch(getApiUrl('/api/research'), { 
         method: 'OPTIONS', // Lightweight check
         signal: controller.signal 
       }).catch(() => null);
@@ -23,7 +22,7 @@ export const api = {
 
   startResearch: async (topic: string, isDeep: boolean): Promise<ResearchResult> => {
     try {
-      const response = await fetch(`${API_URL}/research`, {
+      const response = await fetch(getApiUrl('/api/research'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // Strictly match Python snake_case Pydantic model
@@ -58,7 +57,7 @@ export const api = {
 
   chat: async (history: ChatMessage[], context: string, question: string) => {
     try {
-      const response = await fetch(`${API_URL}/question`, {
+      const response = await fetch(getApiUrl('/api/question'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

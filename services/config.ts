@@ -42,6 +42,8 @@ export const config = {
   pexelsApiKey: getEnv('PEXELS_API_KEY'),
   // Support both standard names for Google Key
   googleApiKey: getEnv('API_KEY') || getEnv('GOOGLE_API_KEY'),
+  // API URL configuration
+  apiUrl: getEnv('API_URL') || getEnv('REACT_APP_API_URL') || getEnv('VITE_API_URL'),
 };
 
 // Debug helper to print status to console
@@ -50,7 +52,23 @@ export const logConfigStatus = () => {
   console.log("Groq Key:", config.groqApiKey ? "✅ Loaded" : "❌ Missing");
   console.log("Google Key:", config.googleApiKey ? "✅ Loaded" : "❌ Missing");
   console.log("Tavily Key:", config.tavilyApiKey ? "✅ Loaded" : "❌ Missing");
+  console.log("API URL:", config.apiUrl ? config.apiUrl : "⚠️ Using default (localhost:8002)");
   console.log("--------------------------------");
 };
 
 export const hasKey = (key: string | undefined): boolean => !!key && key.length > 0;
+
+// Utility function to get the base API URL
+export const getApiBaseUrl = (): string => {
+  // In production, this should be set via environment variables
+  // In development, fallback to localhost:8002
+  return config.apiUrl || 'http://localhost:8002';
+};
+
+// Utility function to get the full API URL
+export const getApiUrl = (endpoint: string = ''): string => {
+  const baseUrl = getApiBaseUrl();
+  // Ensure endpoint starts with '/' but doesn't double up
+  const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return `${baseUrl}${formattedEndpoint}`;
+};

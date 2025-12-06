@@ -1,6 +1,5 @@
 import { ResearchResult, ChatMessage } from "../types";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8002/api";
+import { getApiUrl } from "./config";
 
 /**
  * Analyze a document using the backend service
@@ -8,7 +7,7 @@ const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8002/api";
 export const analyzeDocument = async (fileBase64: string, mimeType: string): Promise<ResearchResult> => {
   try {
     // Use backend API for document analysis
-    const response = await fetch(`${API_URL}/document-analysis`, {
+    const response = await fetch(getApiUrl('/api/document-analysis'), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ file_base64: fileBase64, mime_type: mimeType })
@@ -32,7 +31,7 @@ export const analyzeDocument = async (fileBase64: string, mimeType: string): Pro
 export const askQuestion = async (question: string, context: string): Promise<string> => {
   try {
     // Use backend API for AI Chatbot
-    const response = await fetch(`${API_URL}/question`, {
+    const response = await fetch(getApiUrl('/api/question'), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question, context })
@@ -60,7 +59,7 @@ export const askFollowUp = async (
 ): Promise<string> => {
   try {
     // Use backend API for AI Chatbot
-    const response = await fetch("http://localhost:8002/api/question", {
+    const response = await fetch(getApiUrl('/api/question'), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
