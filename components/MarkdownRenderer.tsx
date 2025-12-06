@@ -42,7 +42,7 @@ const parseMarkdown = (text: string) => {
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
   return (
     <div 
-      className="markdown-body font-sans leading-relaxed"
+      className="markdown-body font-sans leading-relaxed overflow-x-auto"
       dangerouslySetInnerHTML={{ __html: parseMarkdown(content) }}
     />
   );

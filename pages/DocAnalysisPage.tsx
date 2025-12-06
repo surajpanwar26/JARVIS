@@ -104,7 +104,7 @@ export const DocAnalysisPage: React.FC<DocAnalysisPageProps> = ({ initialFile, o
   };
 
   return (
-    <div className="h-full flex flex-col max-w-7xl mx-auto p-6 animate-fade-in">
+    <div className="h-full flex flex-col max-w-[1800px] mx-auto p-6 animate-fade-in">
        <div className="mb-6 flex items-center justify-between">
          <div className="flex items-center space-x-4">
             <button 
