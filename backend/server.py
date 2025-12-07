@@ -122,14 +122,12 @@ import os
 # Add CORS middleware to allow requests from the frontend
 # Use environment variable for frontend URL with fallbacks
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
-render_frontend_url = "https://jarvis-frontend-bheu.onrender.com"
 # Add your actual frontend URL
 actual_frontend_url = "https://jarvis-m1l1.onrender.com"
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        render_frontend_url, 
         frontend_url, 
         "http://localhost:5173",
         actual_frontend_url  # Your actual frontend URL
