@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unique Wave Animation Patterns Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* Rotating Circle Pattern */
+    @keyframes rotate-circle {
+      0% { transform: rotate(0deg) translateX(15px) rotate(0deg); }
+      100% { transform: rotate(360deg) translateX(15px) rotate(-360deg); }
+    }
+    
+    /* Vertical Bounce with Horizontal Movement */
+    @keyframes vertical-horizontal {
+      0%, 100% { transform: translateY(0) translateX(0); }
+      25% { transform: translateY(-20px) translateX(5px); }
+      50% { transform: translateY(0) translateX(10px); }
+      75% { transform: translateY(-10px) translateX(5px); }
+    }
+    
+    /* Pulsing Sizes */
+    @keyframes pulse-sizes {
+      0%, 100% { transform: scale(1); }
+      25% { transform: scale(1.5); }
+      50% { transform: scale(0.8); }
+      75% { transform: scale(1.2); }
+    }
+    
+    /* Diagonal Movement */
+    @keyframes diagonal {
+      0% { transform: translate(0, 0); }
+      25% { transform: translate(10px, -15px); }
+      50% { transform: translate(20px, 0); }
+      75% { transform: translate(10px, 15px); }
+      100% { transform: translate(0, 0); }
+    }
+    
+    /* Fade In Out with Position Change */
+    @keyframes fade-move {
+      0% { transform: translateY(0); opacity: 1; }
+      25% { transform: translateY(-20px); opacity: 0.3; }
+      50% { transform: translateY(0); opacity: 1; }
+      75% { transform: translateY(10px); opacity: 0.5; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    
+    /* Zigzag Movement */
+    @keyframes zigzag {
+      0% { transform: translate(0, 0); }
+      16.6% { transform: translate(10px, -15px); }
+      33.3% { transform: translate(20px, 0); }
+      50% { transform: translate(30px, 15px); }
+      66.6% { transform: translate(20px, 30px); }
+      83.3% { transform: translate(10px, 15px); }
+      100% { transform: translate(0, 0); }
+    }
+    
+    /* Expanding Contracting Ring */
+    @keyframes ring {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(2); opacity: 0; }
+    }
+    
+    /* Random Position Jumps */
+    @keyframes random-jump {
+      0% { transform: translate(0, 0); }
+      10% { transform: translate(5px, -10px); }
+      20% { transform: translate(-5px, 5px); }
+      30% { transform: translate(10px, 10px); }
+      40% { transform: translate(-10px, -5px); }
+      50% { transform: translate(0, 15px); }
+      60% { transform: translate(15px, -10px); }
+      70% { transform: translate(-15px, 0); }
+      80% { transform: translate(5px, 10px); }
+      90% { transform: translate(-5px, -15px); }
+      100% { transform: translate(0, 0); }
+    }
+    
+    /* Figure-8 Movement */
+    @keyframes figure-eight {
+      0%, 100% { transform: translate(0, 0); }
+      12.5% { transform: translate(10px, -10px); }
+      25% { transform: translate(20px, 0); }
+      37.5% { transform: translate(10px, 10px); }
+      50% { transform: translate(0, 20px); }
+      62.5% { transform: translate(-10px, 10px); }
+      75% { transform: translate(-20px, 0); }
+      87.5% { transform: translate(-10px, -10px); }
+    }
+    
+    .animate-rotate-circle {
+      animation: rotate-circle 3s linear infinite;
+    }
+    
+    .animate-vertical-horizontal {
+      animation: vertical-horizontal 2s ease-in-out infinite;
+    }
+    
+    .animate-pulse-sizes {
+      animation: pulse-sizes 2s ease-in-out infinite;
+    }
+    
+    .animate-diagonal {
+      animation: diagonal 3s ease-in-out infinite;
+    }
+    
+    .animate-fade-move {
+      animation: fade-move 2s ease-in-out infinite;
+    }
+    
+    .animate-zigzag {
+      animation: zigzag 3s ease-in-out infinite;
+    }
+    
+    .animate-ring {
+      animation: ring 2s ease-out infinite;
+    }
+    
+    .animate-random-jump {
+      animation: random-jump 4s ease-in-out infinite;
+    }
+    
+    .animate-figure-eight {
+      animation: figure-eight 4s ease-in-out infinite;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #0c1220 100%);
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+    
+    .chat-container {
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 0.75rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+    
+    .message-user {
+      background: rgba(6, 182, 212, 0.2);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      border-radius: 0.5rem;
+      border-bottom-right-radius: 0;
+    }
+    
+    .message-assistant {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 0.5rem;
+      border-bottom-left-radius: 0;
+    }
+  </style>
+</head>
+<body class="p-8 bg-gray-900 min-h-screen text-white">
+  <h1 class="text-3xl font-bold mb-8 text-center">Unique Wave Animation Patterns Preview</h1>
+  
+  <div class="max-w-6xl mx-auto">
+    <!-- Chat Container with Unique Wave Patterns -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-semibold mb-6 text-cyan-400">Chatbox with Unique Animation Patterns</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Rotating Circle Pattern -->
+        <div class="chat-container rounded-xl overflow-hidden shadow-2xl">
+          <div class="p-3 border-b border-white/10 bg-white/5 text-xs font-bold text-slate-200 uppercase tracking-wider">
+            Rotating Circle
+          </div>
+          <div class="p-4 h-32 flex items-center justify-center">
+            <div class="relative w-16 h-16">
+              <div class="absolute w-3 h-3 bg-cyan-500 rounded-full animate-rotate-circle"></div>
+              <div class="absolute w-3 h-3 bg-cyan-500 rounded-full animate-rotate-circle delay-300"></div>
+              <div class="absolute w-3 h-3 bg-cyan-500 rounded-full animate-rotate-circle delay-600"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Vertical + Horizontal Movement -->
+        <div class="chat-container rounded-xl overflow-hidden shadow-2xl">
+          <div class="p-3 border-b border-white/10 bg-white/5 text-xs font-bold text-slate-200 uppercase tracking-wider">
+            Vertical-Horizontal
+          </div>
+          <div class="p-4 h-32 flex items-center justify-center">
+            <div class="flex space-x-2">
+              <div class="w-3 h-3 bg-purple-500 rounded-full animate-vertical-horizontal"></div>
+              <div class="w-3 h-3 bg-purple-500 rounded-full animate-vertical-horizontal delay-200"></div>
+              <div class="w-3 h-3 bg-purple-500 rounded-full animate-vertical-horizontal delay-400"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Pulsing Sizes -->
+        <div class="chat-container rounded-xl overflow-hidden shadow-2xl">
+          <div class="p-3 border-b border-white/10 bg-white/5 text-xs font-bold text-slate-200 uppercase tracking-wider">
+            Pulsing Sizes
+          </div>
+          <div class="p-4 h-32 flex items-center justify-center">
+            <div class="flex space-x-2 items-center">
+              <div class="w-4 h-4 bg-green-500 rounded-full animate-pulse-sizes"></div>
+              <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse-sizes delay-300"></div>
+              <div class="w-6 h-6 bg-green-500 rounded-full animate-pulse-sizes delay-600"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Diagonal Movement -->
+        <div class="chat-container rounded-xl overflow-hidden shadow-2xl">
+          <div class="p-3 border-b border-white/10 bg-white/5 text-xs font-bold text-slate-200 uppercase tracking-wider">
+            Diagonal Path
+          </div>
+          <div class="p-4 h-32 flex items-center justify-center">
+            <div class="flex space-x-2">
+              <div class="w-3 h-3 bg-amber-500 rounded-full animate-diagonal"></div>
+              <div class="w-3 h-3 bg-amber-500 rounded-full animate-diagonal delay-300"></div>
+              <div class="w-3 h-3 bg-amber-500 rounded-full animate-diagonal delay-600"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Fade + Move -->
+        <div class="chat-container rounded-xl overflow-hidden shadow-2xl">
+          <div class="p-3 border-b border-white/10 bg-white/5 text-xs font-bold text-slate-200 uppercase tracking-wider">
+            Fade Movement
+          </div>
+          <div class="p-4 h-32 flex items-center justify-center">
+            <div class="flex space-x-2">
+              <div class="w-3 h-3 bg-rose-500 rounded-full animate-fade-move"></div>
+              <div class="w-3 h-3 bg-rose-500 rounded-full animate-fade-move delay-300"></div>
+              <div class="w-3 h-3 bg-rose-500 rounded-full animate-fade-move delay-600"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Zigzag Movement -->
+        <div class="chat-container rounded-xl overflow-hidden shadow-2xl">
+          <div class="p-3 border-b border-white/10 bg-white/5 text-xs font-bold text-slate-200 uppercase tracking-wider">
+            Zigzag Path
+          </div>
+          <div class="p-4 h-32 flex items-center justify-center">
+            <div class="flex space-x-2">
+              <div class="w-3 h-3 bg-indigo-500 rounded-full animate-zigzag"></div>
+              <div class="w-3 h-3 bg-indigo-500 rounded-full animate-zigzag delay-500"></div>
+              <div class="w-3 h-3 bg-indigo-500 rounded-full animate-zigzag delay-1000"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- More Unique Patterns -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-semibold mb-6 text-cyan-400">Advanced Animation Patterns</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Expanding Ring -->
+        <div class="chat-container rounded-xl overflow-hidden shadow-2xl">
+          <div class="p-3 border-b border-white/10 bg-white/5 text-xs font-bold text-slate-200 uppercase tracking-wider">
+            Expanding Ring
+          </div>
+          <div class="p-4 h-32 flex items-center justify-center">
+            <div class="relative w-12 h-12">
+              <div class="absolute w-3 h-3 bg-teal-500 rounded-full animate-ring"></div>
+              <div class="absolute w-3 h-3 bg-teal-500 rounded-full animate-ring delay-500"></div>
+              <div class="absolute w-3 h-3 bg-teal-500 rounded-full animate-ring delay-1000"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Random Jumps -->
+        <div class="chat-container rounded-xl overflow-hidden shadow-2xl">
+          <div class="p-3 border-b border-white/10 bg-white/5 text-xs font-bold text-slate-200 uppercase tracking-wider">
+            Random Jumps
+          </div>
+          <div class="p-4 h-32 flex items-center justify-center">
+            <div class="flex space-x-2">
+              <div class="w-3 h-3 bg-blue-500 rounded-full animate-random-jump"></div>
+              <div class="w-3 h-3 bg-blue-500 rounded-full animate-random-jump delay-700"></div>
+              <div class="w-3 h-3 bg-blue-500 rounded-full animate-random-jump delay-1400"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Figure-8 Movement -->
+        <div class="chat-container rounded-xl overflow-hidden shadow-2xl">
+          <div class="p-3 border-b border-white/10 bg-white/5 text-xs font-bold text-slate-200 uppercase tracking-wider">
+            Figure-8 Path
+          </div>
+          <div class="p-4 h-32 flex items-center justify-center">
+            <div class="flex space-x-2">
+              <div class="w-3 h-3 bg-yellow-500 rounded-full animate-figure-eight"></div>
+              <div class="w-3 h-3 bg-yellow-500 rounded-full animate-figure-eight delay-1000"></div>
+              <div class="w-3 h-3 bg-yellow-500 rounded-full animate-figure-eight delay-2000"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Combined Pattern -->
+        <div class="chat-container rounded-xl overflow-hidden shadow-2xl">
+          <div class="p-3 border-b border-white/10 bg-white/5 text-xs font-bold text-slate-200 uppercase tracking-wider">
+            Combined Effects
+          </div>
+          <div class="p-4 h-32 flex items-center justify-center">
+            <div class="flex space-x-3">
+              <div class="w-3 h-3 bg-pink-500 rounded-full animate-diagonal"></div>
+              <div class="w-4 h-4 bg-pink-500 rounded-full animate-pulse-sizes delay-300"></div>
+              <div class="w-3 h-3 bg-pink-500 rounded-full animate-fade-move delay-600"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Full Chat Interface Example -->
+    <section>
+      <h2 class="text-2xl font-semibold mb-6 text-cyan-400">Full Chat Interface with Selected Pattern</h2>
+      
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Agent Operations Panel -->
+        <div class="lg:col-span-1 chat-container p-4">
+          <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider mb-3">Agent Operations</h3>
+          <div class="text-xs space-y-2">
+            <div class="flex items-center">
+              <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse mr-2"></div>
+              <span>Editor: Planning research strategy...</span>
+            </div>
+            <div class="flex items-center">
+              <div class="w-2 h-2 rounded-full bg-amber-500 mr-2"></div>
+              <span>Researcher: Data collection complete</span>
+            </div>
+            <div class="flex items-center">
+              <div class="w-2 h-2 rounded-full bg-purple-500 mr-2"></div>
+              <span>Reviewer: Validating sources...</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Main Chat Container -->
+        <div class="lg:col-span-2 chat-container rounded-xl overflow-hidden shadow-2xl">
+          <!-- Chat Header -->
+          <div class="p-4 border-b border-white/10 bg-white/5 flex items-center">
+            <svg class="w-4 h-4 text-cyan-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+            </svg>
+            <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider font-mono">AI Chatbot</h3>
+          </div>
+          
+          <!-- Chat Messages -->
+          <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar h-64">
+            <!-- User Message -->
+            <div class="flex justify-end">
+              <div class="max-w-[85%] message-user p-3 text-sm leading-relaxed">
+                Explain the concept of neural networks in simple terms.
+              </div>
+            </div>
+            
+            <!-- Loading Animation - Diagonal Movement Pattern -->
+            <div class="flex justify-start">
+              <div class="bg-white/10 border border-white/10 rounded-lg p-3 rounded-bl-none flex items-center h-10">
+                <div class="flex space-x-2">
+                  <div class="w-3 h-3 bg-amber-500 rounded-full animate-diagonal"></div>
+                  <div class="w-3 h-3 bg-amber-500 rounded-full animate-diagonal delay-300"></div>
+                  <div class="w-3 h-3 bg-amber-500 rounded-full animate-diagonal delay-600"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Chat Input -->
+          <form class="p-3 bg-white/5 border-t border-white/10">
+            <div class="relative">
+              <input
+                type="text"
+                placeholder="Ask a follow-up question..."
+                class="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 pl-4 pr-10 text-sm text-white placeholder-slate-500 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 outline-none transition-all"
+              />
+              <button 
+                type="submit"
+                class="absolute right-2 top-2 p-1 text-slate-400 hover:text-cyan-400 transition-colors"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                </svg>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>
