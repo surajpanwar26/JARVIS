@@ -37,4 +37,15 @@ services:
       - key: REACT_APP_API_URL
         value: https://jarvis-backend-1jy6.onrender.com
 # Prevent Docker autodetection
-autoDeploy: false
+
+# Define routes for proper proxying
+routes:
+  - type: rewrite
+    source: /api/*
+    destination: https://jarvis-backend-1jy6.onrender.com/api/
+
+# Health check configuration
+healthCheckPath: /health
+
+# Auto-deploy on GitHub push
+autoDeploy: true

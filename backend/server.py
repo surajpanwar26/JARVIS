@@ -124,13 +124,15 @@ import os
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
 # Add your actual frontend URL
 actual_frontend_url = "https://jarvis-m1l1.onrender.com"
+render_frontend_url = "https://jarvis-frontend.onrender.com"  # Default Render frontend URL
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         frontend_url, 
         "http://localhost:5173",
-        actual_frontend_url  # Your actual frontend URL
+        actual_frontend_url,  # Your actual frontend URL
+        render_frontend_url   # Default Render frontend URL
     ],
     allow_credentials=True,
     allow_methods=["*"],
