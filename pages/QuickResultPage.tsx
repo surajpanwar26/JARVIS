@@ -125,7 +125,7 @@ export const QuickResultPage: React.FC<QuickResultPageProps> = ({ initialQuery, 
           
           <div className="flex items-center space-x-3 bg-amber-500/10 border border-amber-500/20 px-4 py-2 rounded-full">
             <ZapIcon className="w-5 h-5 text-amber-400" />
-            <span className="font-bold tracking-wider text-sm text-amber-200 uppercase">Quick Briefing</span>
+            <span className="font-bold tracking-wider text-sm text-amber-200 uppercase">Quick Summary</span>
           </div>
 
           {/* Export Dropdown */}
@@ -155,7 +155,7 @@ export const QuickResultPage: React.FC<QuickResultPageProps> = ({ initialQuery, 
         {/* Active Topic Indicator */}
         <div className="flex justify-center mt-2">
             <div className="text-xl font-display text-white border-b border-white/10 pb-2 px-8">
-               <span className="text-slate-500 mr-2 text-sm uppercase tracking-wide">Subject:</span>
+               <span className="text-slate-500 mr-2 text-sm uppercase tracking-wide">Topic:</span>
                {activeTopic}
             </div>
         </div>
