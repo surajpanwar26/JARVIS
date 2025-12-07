@@ -5,7 +5,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: cd /opt/render/project/src && PYTHONPATH=/opt/render/project/src:$PYTHONPATH gunicorn -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT backend.server:app
+    startCommand: gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:$PORT backend.server:app
     envVars:
       - key: PYTHONPATH
         value: /opt/render/project/src
@@ -41,4 +41,3 @@ services:
 
 # Prevent Docker autodetection
 autoDeploy: false
-# Force redeploy marker: 2025-12-07
