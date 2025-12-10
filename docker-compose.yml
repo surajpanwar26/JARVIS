@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  jarvis:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-8000}:${PORT:-8000}"
+      - "${FRONTEND_PORT:-5173}:${FRONTEND_PORT:-5173}"
+    volumes:
+      - .env:/app/.env
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - PEXELS_API_KEY=${PEXELS_API_KEY}
+      - UNSPLASH_ACCESS_KEY=${UNSPLASH_ACCESS_KEY}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8000}/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Alternative setup for development with separate frontend and backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "${PORT:-8000}:${PORT:-8000}"
+    volumes:
+      - .env:/app/.env
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - PEXELS_API_KEY=${PEXELS_API_KEY}
+      - UNSPLASH_ACCESS_KEY=${UNSPLASH_ACCESS_KEY}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
+    command: python backend/server.py
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "${FRONTEND_PORT:-5173}:${FRONTEND_PORT:-5173}"
+    volumes:
+      - .:/app
+    depends_on:
+      - backend

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/x-icon" href="/Jarvis.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JARVIS - AI Research Assistant</title>
+    
+    <!-- Primary Meta Tags -->
+    <meta name="title" content="JARVIS - AI Research Assistant">
+    <meta name="description" content="Multi-Agent AI Research Platform powered by Google Gemini">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jarvis.example.com/">
+    <meta property="og:title" content="JARVIS - AI Research Assistant">
+    <meta property="og:description" content="Multi-Agent AI Research Platform powered by Google Gemini">
+    <meta property="og:image" content="/Jarvis.ico" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://jarvis.example.com/">
+    <meta property="twitter:title" content="JARVIS - AI Research Assistant">
+    <meta property="twitter:description" content="Multi-Agent AI Research Platform powered by Google Gemini">
+    <meta property="twitter:image" content="/Jarvis.ico" />
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- TODO: For production deployment, replace CDN with local installation via PostCSS or Tailwind CLI -->
+    <!-- TODO: For production deployment, update logo path from /src/assets/logo.svg to /Jarvis.ico -->
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+      @keyframes wave {
+        0%, 40%, 100% { transform: scaleY(0.2); }
+        20% { transform: scaleY(1); }
+      }
+      
+      @keyframes progress {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+      
+      @keyframes orbit {
+        0% { transform: rotate(0deg) translateX(12px) rotate(0deg); }
+        100% { transform: rotate(360deg) translateX(12px) rotate(-360deg); }
+      }
+      
+      @keyframes elastic-bounce-dot1 {
+        0%, 100% { transform: translateY(0); }
+        14% { transform: translateY(-3px); }
+        28% { transform: translateY(0); }
+        42% { transform: translateY(7px); }
+        56% { transform: translateY(0); }
+        70% { transform: translateY(-5px); }
+        84% { transform: translateY(0); }
+      }
+      
+      @keyframes elastic-bounce-dot2 {
+        0%, 100% { transform: translateY(0); }
+        14% { transform: translateY(3px); }
+        28% { transform: translateY(0); }
+        42% { transform: translateY(-7px); }
+        56% { transform: translateY(0); }
+        70% { transform: translateY(5px); }
+        84% { transform: translateY(0); }
+      }
+      
+      @keyframes elastic-bounce-dot3 {
+        0%, 100% { transform: translateY(0); }
+        14% { transform: translateY(-3px); }
+        28% { transform: translateY(0); }
+        42% { transform: translateY(7px); }
+        56% { transform: translateY(0); }
+        70% { transform: translateY(-5px); }
+        84% { transform: translateY(0); }
+      }
+      
+      .animate-wave {
+        animation: wave 1.5s ease-in-out infinite;
+      }
+      
+      .animate-progress {
+        animation: progress 2s ease-in-out infinite;
+      }
+      
+      .animate-orbit {
+        animation: orbit 2s linear infinite;
+      }
+      
+      .animate-elastic-bounce-dot1 {
+        animation: elastic-bounce-dot1 2.1s ease-in-out infinite;
+      }
+      
+      .animate-elastic-bounce-dot2 {
+        animation: elastic-bounce-dot2 2.1s ease-in-out infinite;
+      }
+      
+      .animate-elastic-bounce-dot3 {
+        animation: elastic-bounce-dot3 2.1s ease-in-out infinite;
+      }
+      
+      body {
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(135deg, #0f172a 0%, #0c1220 100%);
+        color: #e2e8f0;
+        min-height: 100vh;
+      }
+      
+      .font-display {
+        font-family: 'JetBrains Mono', monospace;
+      }
+      
+      .glass-card {
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.3);
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #4f46e5;
+        border-radius: 3px;
+      }
+      
+      .glow-text {
+        text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+      }
+      
+      .perspective-1000 {
+        perspective: 1000px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
