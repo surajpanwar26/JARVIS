@@ -68,27 +68,24 @@ def generate_llm_content(prompt: str, system_instruction: str = "", is_report: b
     hugging_face_api_key = os.getenv("HUGGINGFACE_API_KEY")
     if hugging_face_api_key:
         # List of Hugging Face models to try in order of preference
-        huggingface_models = os.getenv("HUGGINGFACE_MODELS", "google/gemma-2-9b-it,microsoft/Phi-3-mini-4k-instruct,mistralai/Mistral-7B-Instruct-v0.3,HuggingFaceH4/zephyr-7b-beta,TinyLlama/TinyLlama-1.1B-Chat-v1.0").split(",")
+        # Updated to use models that work with current Hugging Face InferenceClient
+        huggingface_models = os.getenv("HUGGINGFACE_MODELS", "mistralai/Mistral-7B-Instruct-v0.2,HuggingFaceH4/zephyr-7b-beta,google/gemma-2b-it").split(",")
         
         # Try each model in order until one works
         for model_id in huggingface_models:
             providers.append({
                 "name": f"Hugging Face ({model_id})",
-                "url": f"{os.getenv('HUGGINGFACE_API_URL', 'https://router.huggingface.co/models')}/{model_id}",
+                "type": "huggingface_client",  # New type to indicate we should use the client
+                "model": model_id,
+                "api_key": hugging_face_api_key,
                 "payload": {
-                    "inputs": f"{system_instruction or 'You are a helpful assistant.'}\n\n{prompt}",
-                    "parameters": {
-                        "max_new_tokens": 500 if not is_report else 1000,  # Reduce tokens for non-report generation
-                        "return_full_text": False,
-                        "temperature": 0.7
-                    }
-                },
-                "headers": {
-                    "Authorization": f"Bearer {hugging_face_api_key}",
-                    "Content-Type": "application/json"
+                    "prompt": prompt,
+                    "system_instruction": system_instruction,
+                    "max_tokens": 500 if not is_report else 1000,  # Reduce tokens for non-report generation
+                    "temperature": 0.7
                 }
             })
-    
+
     if not providers:
         raise Exception("No API keys configured for LLM providers")
     
@@ -101,42 +98,66 @@ def generate_llm_content(prompt: str, system_instruction: str = "", is_report: b
             logger.info(f"Trying LLM provider: {provider['name']}")
             attempted_providers.append(provider['name'])
             
-            # Add timeout to prevent hanging requests
-            response = requests.post(
-                provider["url"],
-                json=provider["payload"],
-                headers=provider["headers"],
-                timeout=30  # 30 second timeout
-            )
-            
-            # Handle different response status codes
-            if response.status_code == 401:
-                logger.warning(f"{provider['name']} authentication failed (401)")
-                continue
-            elif response.status_code == 403:
-                logger.warning(f"{provider['name']} access forbidden (403)")
-                continue
-            elif response.status_code == 429:
-                logger.warning(f"{provider['name']} rate limit exceeded (429)")
-                continue
-            elif response.status_code >= 500:
-                logger.warning(f"{provider['name']} server error ({response.status_code})")
-                continue
-            
-            response.raise_for_status()
-            
-            # Parse response based on provider
-            if provider["name"].startswith("Google Gemini"):
-                result = response.json()
-                content = result["candidates"][0]["content"]["parts"][0]["text"]
-            elif provider["name"].startswith("Hugging Face"):
-                result = response.json()
-                content = result[0]["generated_text"] if isinstance(result, list) else result.get("generated_text", "")
-            elif provider["name"] == "Groq":
-                result = response.json()
-                content = result["choices"][0]["message"]["content"]
+            # Handle different provider types
+            if provider.get("type") == "huggingface_client":
+                # Use Hugging Face InferenceClient
+                from huggingface_hub import InferenceClient
+                
+                client = InferenceClient(token=provider["api_key"])
+                payload = provider["payload"]
+                
+                # Prepare messages for chat completion
+                messages = []
+                if payload.get("system_instruction"):
+                    messages.append({"role": "system", "content": payload["system_instruction"]})
+                messages.append({"role": "user", "content": payload["prompt"]})
+                
+                response = client.chat_completion(
+                    messages=messages,
+                    model=provider["model"],
+                    max_tokens=payload.get("max_tokens", 500),
+                    temperature=payload.get("temperature", 0.7)
+                )
+                
+                content = response.choices[0].message.content
             else:
-                content = response.text
+                # Existing logic for other providers
+                # Add timeout to prevent hanging requests
+                response = requests.post(
+                    provider["url"],
+                    json=provider["payload"],
+                    headers=provider["headers"],
+                    timeout=30  # 30 second timeout
+                )
+                
+                # Handle different response status codes
+                if response.status_code == 401:
+                    logger.warning(f"{provider['name']} authentication failed (401)")
+                    continue
+                elif response.status_code == 403:
+                    logger.warning(f"{provider['name']} access forbidden (403)")
+                    continue
+                elif response.status_code == 429:
+                    logger.warning(f"{provider['name']} rate limit exceeded (429)")
+                    continue
+                elif response.status_code >= 500:
+                    logger.warning(f"{provider['name']} server error ({response.status_code})")
+                    continue
+                
+                response.raise_for_status()
+                
+                # Parse response based on provider
+                if provider["name"].startswith("Google Gemini"):
+                    result = response.json()
+                    content = result["candidates"][0]["content"]["parts"][0]["text"]
+                elif provider["name"].startswith("Hugging Face"):
+                    result = response.json()
+                    content = result[0]["generated_text"] if isinstance(result, list) else result.get("generated_text", "")
+                elif provider["name"] == "Groq":
+                    result = response.json()
+                    content = result["choices"][0]["message"]["content"]
+                else:
+                    content = response.text
             
             logger.info(f"Successfully generated content using {provider['name']}")
             return {"content": content, "provider": provider["name"], "attempted_providers": attempted_providers[:-1]}
@@ -153,16 +174,7 @@ def generate_llm_content(prompt: str, system_instruction: str = "", is_report: b
             continue
         except Exception as e:
             last_error = e
-            # Check if this is a quota limit error
-            error_str = str(e).lower()
-            is_quota_error = "429" in error_str or "quota" in error_str or "limit" in error_str or "exceeded" in error_str
-            
-            if is_quota_error:
-                logger.warning(f"{provider['name']} quota limit hit: {str(e)}")
-            else:
-                logger.warning(f"Failed to generate content with {provider['name']}: {str(e)}")
-            
-            # Continue to the next provider regardless of error type
+            logger.warning(f"{provider['name']} unexpected error: {str(e)}")
             continue
     
     # If we get here, all providers failed - return a simple fallback response

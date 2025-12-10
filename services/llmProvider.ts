@@ -20,7 +20,8 @@ interface LLMProvider {
 // --- 1. Hugging Face Implementation (Fallback) ---
 class HuggingFaceProvider implements LLMProvider {
   private apiKey: string;
-  private baseUrl = getEnv('HUGGINGFACE_API_URL') || "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct";
+  // Use the backend endpoint for Hugging Face
+  private baseUrl = "/api/llm/generate";
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -31,38 +32,27 @@ class HuggingFaceProvider implements LLMProvider {
     const isReportGeneration = params.prompt.toLowerCase().includes("report") || 
                               (params.systemInstruction && params.systemInstruction.toLowerCase().includes("report"));
     
-    const fullPrompt = `<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-
-${params.systemInstruction || "You are a helpful assistant."}${params.jsonMode ? " Output strict JSON only." : ""}<|eot_id|><|start_header_id|>user<|end_header_id|>
-
-${params.prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-`;
-
     try {
       const response = await fetch(this.baseUrl, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${this.apiKey}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          inputs: fullPrompt,
-          parameters: {
-            max_new_tokens: isReportGeneration ? 4096 : 2048, // Reduced tokens for non-report generation
-            return_full_text: false,
-            temperature: 0.7
-          }
+          prompt: params.prompt,
+          systemInstruction: params.systemInstruction,
+          provider: "huggingface",
+          maxTokens: isReportGeneration ? 2048 : 1024,
+          jsonMode: params.jsonMode
         })
       });
 
       if (!response.ok) {
-          throw new Error(`HuggingFace API Error: ${response.statusText}`);
+        throw new Error(`HuggingFace API Error: ${response.statusText}`);
       }
       
       const data = await response.json();
-      let text = Array.isArray(data) ? data[0]?.generated_text : data?.generated_text;
-      return text || "";
+      return data.result || data.content || "";
     } catch (error) {
       console.error("HuggingFace Generation Failed:", error);
       throw error;
