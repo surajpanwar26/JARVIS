@@ -256,17 +256,16 @@ Create 4-5 main sections with detailed analysis.
 # Key Findings
 Present key findings as bullet points.
 
-# Conclusions and Recommendations
-Summarize conclusions and provide actionable recommendations.
+# Implications
+Discuss the significance and potential implications.
 
-Use proper Markdown formatting with headings and lists.` : 
-`Task: Create a comprehensive overview report with the following structure:
+# Conclusions and Recommendations
+Summarize key conclusions and provide actionable recommendations.
+` : 
+`Task: Create a well-structured report with the following structure:
 
 # Executive Summary
-Provide a comprehensive executive summary with 3-5 detailed paragraphs covering different aspects of the topic.
-
-# Key Aspects
-Cover the most important aspects of the topic.
+Provide a comprehensive executive summary with 3-5 detailed paragraphs.
 
 # Analysis and Insights
 Provide critical analysis with supporting evidence.
@@ -274,13 +273,18 @@ Provide critical analysis with supporting evidence.
 # Key Findings
 Present key findings as bullet points.
 
+# Implications
+Discuss the significance and potential implications.
+
 # Conclusions and Recommendations
-Summarize conclusions and provide recommendations.
+Summarize key conclusions and provide actionable recommendations.
+`}
 
-Use proper Markdown formatting with headings and lists.`}
+Context Information:
+${state.context.join('\n\n')}
 
-Ensure the report is professionally formatted and comprehensive.`,
-        systemInstruction: `You are the ${role}. Structure the report professionally. ${lengthGuidance} Focus only on information that will be displayed in the UI. Create a well-organized, comprehensive report with proper headings, subheadings, and lists. Avoid unnecessary elaboration.`,
+Ensure the report is well-organized and professionally formatted using proper Markdown syntax with appropriate headings and lists. Create a comprehensive report that provides substantial insights while remaining focused. ${lengthGuidance} Use only information from the provided context.`,
+        systemInstruction: `You are the ${role}. Structure the report professionally. ${lengthGuidance} Focus only on information that will be displayed in the UI. Create a well-organized, comprehensive report with proper headings, subheadings, and lists. Avoid unnecessary elaboration. If you encounter any issues with API providers, gracefully handle fallback scenarios and inform the user about any limitations in the final report.`,
         thinkingBudget: state.isDeep ? 1024 : undefined 
       });
 
@@ -296,12 +300,38 @@ Ensure the report is professionally formatted and comprehensive.`,
       console.error(e);
       // Detailed error message in UI
       const errDetail = e.message || JSON.stringify(e);
-      this.emit({ type: 'error', message: `Drafting failed: ${errDetail}`, timestamp: new Date() });
-      return { ...state, report: `**Report Generation Failed**
+      
+      // Check if this is a fallback response
+      if (errDetail.includes('fallback') || errDetail.includes('Fallback')) {
+        this.emit({ 
+          type: 'agent_action', 
+          agentName: 'Writer', 
+          message: 'Using fallback response due to API limitations. Report may be less detailed than usual.', 
+          timestamp: new Date() 
+        });
+        
+        // Return a graceful fallback response
+        const fallbackReport = `# Report Generation Notice
+
+Due to temporary API limitations, this report was generated using a fallback mechanism. The content may be less detailed than usual.
+
+## Topic: ${state.topic}
+
+${errDetail.includes('brief overview') ? errDetail.split('brief overview')[1] : errDetail}
+
+---
+
+*Note: This is a system-generated notice. Please try again later for a more comprehensive report or check your API key configurations.*`;
+
+        return { ...state, report: fallbackReport };
+      } else {
+        this.emit({ type: 'error', message: `Drafting failed: ${errDetail}`, timestamp: new Date() });
+        return { ...state, report: `**Report Generation Failed**
 
 Error: ${errDetail}
 
 Please check API keys and try again.` };
+      }
     }
   }
 }

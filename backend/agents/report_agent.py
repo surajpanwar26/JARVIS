@@ -22,16 +22,25 @@ class ReportAgent(BaseAgent):
         logger.info(f"[{self.name}] Generating {'deep' if is_deep else 'quick'} report on: {topic}")
         
         # Generate report using backend LLM endpoint (which has fallback chain)
-        report_content = self._generate_report_with_llm(topic, context, is_deep)
+        report_result = self._generate_report_with_llm(topic, context, is_deep)
+        
+        # Check if this is a fallback response
+        provider_used = report_result.get("provider", "Unknown")
+        if provider_used == "Fallback":
+            logger.warning(f"[{self.name}] Report generated using fallback mechanism")
+            self.emit_event("agent_action", f"Using fallback response due to API limitations. Report may be less detailed than usual.")
+        else:
+            logger.info(f"[{self.name}] Report successfully generated using {provider_used}")
+            self.emit_event("agent_action", f"Report drafted using {provider_used}")
         
         logger.info(f"[{self.name}] Report generation completed")
         
         # Update state
-        state["report"] = report_content
+        state["report"] = report_result.get("content", "")
         
         return state
     
-    def _generate_report_with_llm(self, topic: str, context: str, is_deep: bool) -> str:
+    def _generate_report_with_llm(self, topic: str, context: str, is_deep: bool) -> Dict[str, Any]:
         """Generate report using backend LLM endpoint with fallback support"""
         if is_deep:
             prompt = f"""You are a professional research analyst and report writer tasked with creating a comprehensive, well-structured report on "{topic}".
@@ -61,25 +70,22 @@ Discuss the practical implications, potential applications, and real-world impac
 Identify major challenges, limitations, or areas of concern related to the topic.
 
 # Future Outlook
-Provide insights on future trends, developments, or directions in this field.
+Discuss emerging trends, potential developments, and future directions related to the topic.
 
 # Conclusions and Recommendations
-Summarize the main conclusions and provide 5-6 actionable recommendations.
+Summarize the main conclusions and provide 5-7 actionable recommendations.
 
 Context Information:
 {context}
 
-Ensure the report is comprehensive (2500+ words), well-organized, and professionally formatted using proper Markdown syntax with appropriate headings, subheadings, and lists. Focus on depth and quality rather than brevity. Pay special attention to creating a thorough executive summary with 5-6 substantive paragraphs."""
+Ensure the report is well-organized and professionally formatted using proper Markdown syntax with appropriate headings and lists. Create a comprehensive report that provides substantial insights while remaining focused. Aim for approximately 2500+ words total with particular emphasis on a detailed executive summary."""
         else:
-            prompt = f"""You are a professional research analyst tasked with creating a comprehensive overview report on "{topic}".
-            
-Use the following context information to create a detailed report with the following structure:
+            prompt = f"""You are a research analyst tasked with creating a concise but comprehensive report on "{topic}".
+
+Use the following context information to create a well-structured report with the following structure:
 
 # Executive Summary
-Provide a comprehensive executive summary with 3-5 detailed paragraphs that thoroughly capture the key points, main insights, and critical aspects of the topic. Each paragraph should focus on a different dimension or perspective of the topic.
-
-# Key Aspects
-Create 2-3 main sections covering the most important aspects of the topic, with clear headings and detailed explanations.
+Provide a comprehensive executive summary with 3-5 detailed paragraphs covering different aspects of the topic.
 
 # Analysis and Insights
 Provide critical analysis with supporting evidence, examples, and relevant data where available.
@@ -101,13 +107,18 @@ Ensure the report is well-organized and professionally formatted using proper Ma
         try:
             result = generate_llm_content(
                 prompt=prompt,
-                system_instruction="You are a research analyst skilled at creating well-structured, concise reports optimized for display in a UI. Focus only on information that will be shown to the user.",
+                system_instruction="You are a research analyst skilled at creating well-structured, concise reports optimized for display in a UI. Focus only on information that will be shown to the user. If you encounter any issues with API providers, gracefully handle fallback scenarios.",
                 is_report=True
             )
-            return result.get("content", "")
+            return result
         except Timeout:
             logger.error(f"[{self.name}] LLM generation timed out")
             raise Exception("Report generation timed out. Please try again later.")
         except Exception as e:
             logger.error(f"[{self.name}] LLM generation failed: {str(e)}")
             raise Exception(f"Report generation failed: {str(e)}")
+
+    def emit_event(self, event_type: str, message: str):
+        """Helper method to emit events"""
+        # This would typically send events to the frontend
+        logger.info(f"[{self.name}] {event_type}: {message}")

@@ -266,7 +266,7 @@ async def generate_llm_content_endpoint(request: LLMRequest):
         from requests.exceptions import Timeout
         
         # Optimize token usage based on request type
-        is_report_generation = request.is_report or "report" in request.prompt.lower()
+        is_report_generation = "report" in request.prompt.lower() or (request.system_instruction and "report" in request.system_instruction.lower())
         
         # Try providers in order of preference (Google Gemini -> Groq -> Hugging Face)
         # Hugging Face deprioritized due to reliability issues
@@ -328,7 +328,7 @@ async def generate_llm_content_endpoint(request: LLMRequest):
                 "payload": {
                     "inputs": f"{request.system_instruction or 'You are a helpful assistant.'}\n\n{request.prompt}",
                     "parameters": {
-                        "max_new_tokens": 500 if not is_report_generation else 1000,  # Reduce tokens for non-report generation
+                        "max_new_tokens": 500 if not is_report_generation else 1000,
                         "return_full_text": False,
                         "temperature": 0.7
                     }
@@ -338,37 +338,19 @@ async def generate_llm_content_endpoint(request: LLMRequest):
                     "Content-Type": "application/json"
                 }
             })
-        groq_api_key = os.getenv("GROQ_API_KEY")
-        if groq_api_key:
-            providers.append({
-                "name": "Groq",
-                "url": "https://api.groq.com/openai/v1/chat/completions",
-                "payload": {
-                    "model": "llama-3.1-8b-instant",
-                    "messages": [
-                        {"role": "system", "content": request.system_instruction or "You are a helpful research assistant."},
-                        {"role": "user", "content": request.prompt}
-                    ],
-                    "temperature": 0.5,
-                    "max_tokens": 1024 if not is_report_generation else 2048  # Reduce tokens for non-report generation
-                },
-                "headers": {
-                    "Authorization": f"Bearer {groq_api_key}",
-                    "Content-Type": "application/json"
-                }
-            })
-            
-            if request.json_mode:
-                providers[-1]["payload"]["response_format"] = {"type": "json_object"}
         
         if not providers:
             raise HTTPException(status_code=500, detail="No API keys configured for LLM providers")
         
         # Try each provider in order
         last_error = None
+        attempted_providers = []
+        
         for provider in providers:
             try:
                 logger.info(f"Trying LLM provider: {provider['name']}")
+                attempted_providers.append(provider['name'])
+                
                 # Add timeout to prevent hanging requests
                 response = requests.post(
                     provider["url"],
@@ -376,13 +358,28 @@ async def generate_llm_content_endpoint(request: LLMRequest):
                     headers=provider["headers"],
                     timeout=30  # 30 second timeout
                 )
+                
+                # Handle different response status codes
+                if response.status_code == 401:
+                    logger.warning(f"{provider['name']} authentication failed (401)")
+                    continue
+                elif response.status_code == 403:
+                    logger.warning(f"{provider['name']} access forbidden (403)")
+                    continue
+                elif response.status_code == 429:
+                    logger.warning(f"{provider['name']} rate limit exceeded (429)")
+                    continue
+                elif response.status_code >= 500:
+                    logger.warning(f"{provider['name']} server error ({response.status_code})")
+                    continue
+                
                 response.raise_for_status()
                 
                 # Parse response based on provider
                 if provider["name"] == "Google Gemini":
                     result = response.json()
                     content = result["candidates"][0]["content"]["parts"][0]["text"]
-                elif provider["name"] == "Hugging Face":
+                elif "Hugging Face" in provider["name"]:
                     result = response.json()
                     content = result[0]["generated_text"] if isinstance(result, list) else result.get("generated_text", "")
                 elif provider["name"] == "Groq":
@@ -392,11 +389,17 @@ async def generate_llm_content_endpoint(request: LLMRequest):
                     content = response.text
                 
                 logger.info(f"Successfully generated content using {provider['name']}")
-                return {"content": content, "provider": provider["name"]}
+                return {"content": content, "provider": provider["name"], "attempted_providers": attempted_providers[:-1]}
                 
             except Timeout:
-                last_error = Timeout("Request timed out")
                 logger.warning(f"{provider['name']} request timed out")
+                continue
+            except requests.exceptions.ConnectionError as e:
+                logger.warning(f"{provider['name']} connection error: {str(e)}")
+                continue
+            except requests.exceptions.HTTPError as e:
+                last_error = e
+                logger.warning(f"{provider['name']} HTTP error: {str(e)}")
                 continue
             except Exception as e:
                 last_error = e
@@ -409,14 +412,23 @@ async def generate_llm_content_endpoint(request: LLMRequest):
                 else:
                     logger.warning(f"Failed to generate content with {provider['name']}: {str(e)}")
                 
-                # If it's not a quota error, we might want to continue to the next provider
-                # If it is a quota error, we still continue to the next provider as per fallback strategy
+                # Continue to the next provider regardless of error type
                 continue
         
         # If we get here, all providers failed - return a simple fallback response
         logger.warning(f"All LLM providers failed. Last error: {str(last_error)}. Returning fallback response.")
-        fallback_content = f"I apologize, but I'm unable to generate a detailed response at the moment due to API limitations. Here's a brief overview based on general knowledge:\n\n{request.prompt}\n\nThis is a fallback response because all AI providers are currently unavailable."
-        return {"content": fallback_content, "provider": "Fallback"}
+        attempted_providers_str = ", ".join(attempted_providers) if attempted_providers else "None"
+        fallback_content = f"""I apologize, but I'm unable to generate a detailed response at the moment due to API limitations. Here's a brief overview based on general knowledge:
+
+**Topic**: {request.prompt.split(':')[0] if ':' in request.prompt else request.prompt[:50] + '...' if len(request.prompt) > 50 else request.prompt}
+
+This is a fallback response because all configured AI providers are currently unavailable or experiencing issues:
+- Attempted providers: {attempted_providers_str}
+- Last error: {str(last_error)[:100] if last_error else 'Unknown'}
+
+Please check your API keys and network connectivity, or try again later."""
+
+        return {"content": fallback_content, "provider": "Fallback", "attempted_providers": attempted_providers}
         
     except HTTPException:
         raise
