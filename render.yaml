@@ -42,12 +42,6 @@ services:
         value: https://jarvis-backend-nzcg.onrender.com
 
 # Prevent Docker autodetection
-# Define routes for proper proxying
-routes:
-  - type: rewrite
-    source: /api/*
-    destination: https://jarvis-backend-nzcg.onrender.com/api/
-
 # Health check configuration
 healthCheckPath: /health
 
