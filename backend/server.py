@@ -483,6 +483,29 @@ async def get_user_history(user_id: str):
 async def research_options():
     return {"message": "API endpoint for research requests"}
 
+@app.post("/api/search")
+async def search_endpoint(request: dict):
+    """Endpoint to perform search operations using backend API keys"""
+    try:
+        query = request.get("query", "")
+        if not query:
+            raise HTTPException(status_code=400, detail="Query parameter is required")
+        
+        # Import and use the search utility
+        from backend.search.duckduckgo_search import perform_duckduckgo_search
+        
+        # Perform search using DuckDuckGo (no API keys needed)
+        search_result = perform_duckduckgo_search(query)
+        
+        return {
+            "text": search_result.get("answer", ""),
+            "sources": search_result.get("results", []),
+            "images": search_result.get("images", [])
+        }
+    except Exception as e:
+        logger.error(f"Search error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
 @app.get("/api/duckduckgo/search")
 async def duckduckgo_search(query: str, max_results: int = 10):
     """Endpoint to search for text results using DuckDuckGo"""

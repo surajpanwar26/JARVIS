@@ -98,32 +98,33 @@ npm run build
 npm run preview
 ```
 
+## Security Architecture
+
+This application follows a secure architecture where all API keys are stored in backend environment variables and never exposed to the frontend:
+
+- **Frontend**: Communicates with backend services only through defined API endpoints
+- **Backend**: Securely stores and manages all API keys in environment variables
+- **No direct API calls**: Frontend never makes direct calls to external services
+
 ## Environment Variables
 
 Create a `.env` file in the root directory with the following variables:
-
 ```env
 # Primary Intelligence (Required)
 GROQ_API_KEY=your_groq_api_key
-VITE_GROQ_API_KEY=your_groq_api_key
 
 # Report Generation & Vision (Highly Recommended)
 GOOGLE_API_KEY=your_google_api_key
-VITE_GOOGLE_API_KEY=your_google_api_key
 
 # Web Search (Optional)
 TAVILY_API_KEY=your_tavily_api_key
-VITE_TAVILY_API_KEY=your_tavily_api_key
 
 # Image Search (Choose One)
 PEXELS_API_KEY=your_pexels_api_key
-VITE_PEXELS_API_KEY=your_pexels_api_key
 UNSPLASH_ACCESS_KEY=your_unsplash_access_key
-VITE_UNSPLASH_ACCESS_KEY=your_unsplash_access_key
 
 # Fallback Provider
 HUGGINGFACE_API_KEY=your_huggingface_api_key
-VITE_HUGGINGFACE_API_KEY=your_huggingface_api_key
 
 # Database
 MONGODB_URI=your_mongodb_uri
@@ -140,11 +141,8 @@ VITE_API_URL=http://localhost:${PORT:-8002}
 
 # API Endpoint URLs (Optional - for custom endpoints)
 # TAVILY_API_URL=https://api.tavily.com/search
-# VITE_TAVILY_API_URL=https://api.tavily.com/search
 # PEXELS_API_URL=https://api.pexels.com/v1/search
-# VITE_PEXELS_API_URL=https://api.pexels.com/v1/search
 # UNSPLASH_API_URL=https://api.unsplash.com/search/photos
-# VITE_UNSPLASH_API_URL=https://api.unsplash.com/search/photos
 # GROQ_API_URL=https://api.groq.com/openai/v1/chat/completions
 # HUGGINGFACE_API_URL=https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct
 # GEMINI_API_URL=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent

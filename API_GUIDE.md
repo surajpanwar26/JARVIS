@@ -2,6 +2,10 @@
 
 This document explains how to configure the `.env` file to ensure the JARVIS Research System runs perfectly without modifying any code.
 
+## 🔒 Security Notice
+
+**Important**: All API keys are now securely stored in backend environment variables. The frontend communicates with the backend through secure API endpoints and never accesses external services directly.
+
 ## 🏆 Recommended: The "High Limit" Free Stack
 
 If you want the maximum number of free requests per day, use this combination:
