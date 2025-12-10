@@ -27,6 +27,8 @@ services:
         sync: false
       - key: CORS_ORIGINS
         value: https://jarvis-l8gx.onrender.com
+      - key: ENVIRONMENT
+        value: production
 
   # Frontend Service
   - type: web
