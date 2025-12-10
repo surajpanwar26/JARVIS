@@ -104,107 +104,132 @@ export const DocAnalysisPage: React.FC<DocAnalysisPageProps> = ({ initialFile, o
   };
 
   return (
-    <div className="h-full flex flex-col max-w-[1800px] mx-auto p-6 animate-fade-in">
-       <div className="mb-6 flex items-center justify-between">
-         <div className="flex items-center space-x-4">
-            <button 
-                onClick={onBack} 
-                className="flex items-center text-slate-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/5"
-            >
-                <ArrowLeftIcon className="w-4 h-4 mr-2" /> Start Over
-            </button>
-            <div className="h-8 w-[1px] bg-white/10"></div>
-            <div className="flex items-center space-x-2 text-purple-400">
-                <ActivityIcon className="w-6 h-6" />
-                <h2 className="text-xl font-bold font-display uppercase tracking-widest">Doc Intelligence</h2>
-            </div>
-         </div>
-         
-         <div className="flex items-center gap-4">
-            {docName && <div className="text-xs font-mono text-slate-500 border border-white/10 px-3 py-1 rounded bg-white/5">ACTIVE_DOC: {docName}</div>}
-            
-            {/* Export Dropdown */}
-            <div className="relative">
-               <button 
-                  onClick={() => setShowExportMenu(!showExportMenu)}
-                  disabled={!result}
-                  className="flex items-center space-x-2 bg-white/5 hover:bg-white/10 text-slate-300 px-4 py-2 rounded-lg text-sm font-medium border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-               >
-                  <DownloadIcon className="w-4 h-4" />
-                  <span>Export</span>
-               </button>
-               
-               {showExportMenu && (
-                 <div className="absolute right-0 mt-2 w-48 bg-[#0F1629] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-fade-in">
-                    <button onClick={() => handleExport('pdf')} className="w-full flex items-center px-4 py-3 hover:bg-white/5 text-slate-300 hover:text-white transition-colors text-sm text-left">
-                       <FileIcon className="w-4 h-4 mr-2 text-red-400" /> Export as PDF
-                    </button>
-                    <button onClick={() => handleExport('docx')} className="w-full flex items-center px-4 py-3 hover:bg-white/5 text-slate-300 hover:text-white transition-colors text-sm text-left border-t border-white/5">
-                       <FileIcon className="w-4 h-4 mr-2 text-blue-400" /> Export as DOCX
-                    </button>
-                 </div>
-               )}
-            </div>
-         </div>
-       </div>
+    <div className="h-full flex flex-col max-w-[1800px] mx-auto p-4 animate-fade-in font-sans">
+      {/* Header */}
+      <div className="mb-4 flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <button 
+              onClick={onBack} 
+              className="flex items-center text-slate-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/5 text-sm"
+          >
+              <ArrowLeftIcon className="w-4 h-4 mr-2" />
+              <span className="font-medium">New Analysis</span>
+          </button>
+          
+          <div className="flex items-center space-x-3 bg-purple-500/10 border border-purple-500/20 px-4 py-2 rounded-full">
+            <ActivityIcon className="w-5 h-5 text-purple-400" />
+            <span className="font-bold tracking-wider text-sm text-purple-200 uppercase">Doc Intelligence</span>
+          </div>
 
-       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 min-h-0 overflow-hidden">
-          {/* Left Column: Upload or Report */}
-          <div className="flex flex-col gap-4 overflow-hidden h-full">
-             {status === ResearchStatus.IDLE || status === ResearchStatus.PLANNING ? (
-               // If idle and no initial file processed yet (or reset), show uploader
-               !initialFile ? (
-                 <div className="h-full flex flex-col justify-center">
-                    <FileUploader onFileSelect={handleFileUpload} isLoading={status !== ResearchStatus.IDLE} />
-                 </div>
-               ) : (
-                 <div className="h-full flex items-center justify-center">
-                    <WaveLoader message="Ingesting Document Structure..." />
-                 </div>
-               )
-             ) : (
-               <div className="flex-1 glass-card rounded-xl border border-white/10 flex flex-col overflow-hidden shadow-2xl">
-                 <div className="p-3 bg-white/5 border-b border-white/10 text-xs font-bold text-slate-300 flex justify-between">
-                    <span>ANALYSIS REPORT</span>
-                    <span className="text-purple-400">RAG ENABLED</span>
-                 </div>
-                 <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-black/20">
+          {/* Export Dropdown */}
+          <div className="relative">
+             <button 
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                disabled={!result}
+                className="flex items-center space-x-2 bg-white/5 hover:bg-white/10 text-slate-300 px-4 py-2 rounded-lg text-sm font-medium border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+             >
+                  <DownloadIcon className="w-4 h-4" />
+                  <span>Export Report</span>
+             </button>
+             
+             {showExportMenu && (
+               <div className="absolute right-0 mt-2 w-48 bg-[#0F1629] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-fade-in">
+                  <button onClick={() => handleExport('pdf')} className="w-full flex items-center px-4 py-3 hover:bg-white/5 text-slate-300 hover:text-white transition-colors text-sm text-left">
+                     <FileIcon className="w-4 h-4 mr-2 text-red-400" /> Export as PDF
+                  </button>
+                  <button onClick={() => handleExport('docx')} className="w-full flex items-center px-4 py-3 hover:bg-white/5 text-slate-300 hover:text-white transition-colors text-sm text-left border-t border-white/5">
+                     <FileIcon className="w-4 h-4 mr-2 text-blue-400" /> Export as DOCX
+                  </button>
+               </div>
+             )}
+          </div>
+        </div>
+
+        {/* Active Document Indicator */}
+        {docName && (
+          <div className="flex justify-center mt-2">
+              <div className="text-xl font-display text-white border-b border-white/10 pb-2 px-8">
+                 <span className="text-slate-500 mr-2 text-sm uppercase tracking-wide">Document:</span>
+                 {docName}
+              </div>
+          </div>
+        )}
+      </div>
+
+      {/* 3-Column Layout: Logs (Left) | Report (Middle) | Chat (Right) */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden min-h-0">
+        
+        {/* Left: Processing Logs */}
+        <div className="lg:col-span-3 flex flex-col overflow-hidden h-full">
+            <div className="flex-1 bg-black/20 rounded-xl border border-white/10 p-3 flex flex-col overflow-hidden shadow-xl">
+              <h3 className="text-[10px] font-bold text-purple-500 uppercase tracking-widest mb-2 flex items-center">
+                <span className="w-2 h-2 rounded-full bg-purple-500 mr-2 animate-pulse"></span>
+                Processing Logs
+              </h3>
+              <div className="flex-1 overflow-y-auto bg-black/40 rounded border border-white/5 p-2 custom-scrollbar">
+                <ResearchLogs logs={logs} />
+              </div>
+            </div>
+        </div>
+
+        {/* Middle: Report (Wider) */}
+        <div className="lg:col-span-6 flex flex-col overflow-hidden h-full">
+          <div className="flex-1 glass-card rounded-2xl border border-white/10 overflow-hidden flex flex-col shadow-2xl relative">
+             {/* Report Header */}
+             <div className="px-6 py-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
+                <span className="text-xs font-bold text-purple-400 uppercase tracking-widest">Analysis Report</span>
+                {status === ResearchStatus.SYNTHESIZING && <span className="text-xs text-slate-500 animate-pulse">Generating Report...</span>}
+             </div>
+
+             {/* Content */}
+             <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-black/20">
+                {status === ResearchStatus.IDLE || status === ResearchStatus.PLANNING ? (
+                  // If idle and no initial file processed yet (or reset), show uploader
+                  !initialFile ? (
+                    <div className="h-full flex flex-col justify-center">
+                       <FileUploader onFileSelect={handleFileUpload} isLoading={status !== ResearchStatus.IDLE} />
+                    </div>
+                  ) : (
+                    <div className="h-full flex items-center justify-center">
+                       <WaveLoader message="Ingesting Document Structure..." />
+                    </div>
+                  )
+                ) : (
+                  <>
                     {status === ResearchStatus.SYNTHESIZING ? (
                       <WaveLoader message="Generating Document Analysis Report..." />
                     ) : (
                       <MarkdownRenderer content={result?.report || ""} />
                     )}
-                 </div>
-               </div>
-             )}
-             
-             {/* Logs */}
-             {(status !== ResearchStatus.IDLE) && (
-               <div className="h-48 bg-black/20 rounded-xl p-3 border border-white/10 flex flex-col">
-                 <div className="text-[10px] text-slate-500 font-bold mb-2 uppercase">Processing Logs</div>
-                 <div className="flex-1 overflow-y-auto custom-scrollbar">
-                   <ResearchLogs logs={logs} />
-                 </div>
-               </div>
-             )}
+                    {status === ResearchStatus.ERROR && !result?.report && (
+                      <div className="text-red-400 text-center font-mono mt-10">
+                        Analysis Failed. Check logs for details.
+                      </div>
+                    )}
+                  </>
+                )}
+             </div>
           </div>
-          
-          {/* Right Column: AI Chatbot */}
-          <div className="flex flex-col h-full sticky bottom-4">
-            {result ? (
-               <div className="h-full rounded-xl overflow-hidden shadow-2xl">
-                 <ChatPanel messages={chatMessages} onSendMessage={handleChat} isLoading={isLoadingChat} />
-               </div>
-            ) : (
-               <div className="h-full border-2 border-dashed border-white/5 rounded-xl flex flex-col items-center justify-center text-slate-600 bg-white/5">
-                 <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+        </div>
+
+        {/* Right: AI Chatbot */}
+        <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
+           <div className="flex-1 rounded-2xl overflow-hidden border border-white/10 shadow-xl bg-black/20 h-full sticky top-4">
+              {result ? (
+                <ChatPanel messages={chatMessages} onSendMessage={handleChat} isLoading={isLoadingChat} />
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-slate-600 bg-white/5 p-6 text-center">
+                  <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
                     <ActivityIcon className="w-8 h-8 opacity-20" />
-                 </div>
-                 <p className="text-sm font-mono">Upload a document to enable AI Chatbot</p>
-               </div>
-            )}
-          </div>
-       </div>
+                  </div>
+                  <p className="text-sm font-mono">Upload a document to enable AI Chatbot</p>
+                  <p className="text-xs mt-2 text-slate-500">Ask questions about your document after analysis completes</p>
+                </div>
+              )}
+           </div>
+        </div>
+
+      </div>
     </div>
   );
 };

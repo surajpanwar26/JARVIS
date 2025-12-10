@@ -14,11 +14,16 @@ class ImageAgent(BaseAgent):
         
         # Extract images from the search results
         search_results = state.get("search_results", {})
-        images = []
+        # Preserve existing images collected by ResearcherAgent
+        images = state.get("images", [])
         
-        # Get images from Tavily search results
+        # Get images from Tavily search results and add to existing images
         if "images" in search_results:
-            images.extend(search_results["images"])
+            tavily_images = search_results["images"]
+            # Add Tavily images that aren't already in our collection
+            for img in tavily_images:
+                if img not in images:
+                    images.append(img)
         
         logger.info(f"[{self.name}] Extracted {len(images)} images")
         

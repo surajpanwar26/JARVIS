@@ -12,6 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
   // Activity Log Schema
   const LogSchema = new Schema({
     userId: String,
+    userEmail: String,
     timestamp: Date,
     actionType: String, // 'QUICK_SEARCH', 'DEEP_RESEARCH', 'DOC_ANALYSIS'
     query: String,
@@ -24,6 +25,7 @@ import { v4 as uuidv4 } from 'uuid';
 // --- FRONTEND SERVICE ---
 
 const USER_ID_KEY = 'jarvis_user_id';
+const USER_EMAIL_KEY = 'jarvis_user_email';
 import { getApiUrl } from "./config";
 
 const getUserId = () => {
@@ -35,6 +37,10 @@ const getUserId = () => {
   return id;
 };
 
+const getUserEmail = () => {
+  return localStorage.getItem(USER_EMAIL_KEY) || null;
+};
+
 export interface ActivityLog {
   actionType: 'QUICK_SEARCH' | 'DEEP_RESEARCH' | 'DOC_ANALYSIS' | 'NAVIGATE';
   query?: string;
@@ -42,11 +48,13 @@ export interface ActivityLog {
   documentFormat?: string;
   timestamp: Date;
   userId?: string;
+  userEmail?: string;
 }
 
 export const logActivity = async (activity: Omit<ActivityLog, 'timestamp'>) => {
   const payload = {
     userId: getUserId(),
+    userEmail: getUserEmail(),
     timestamp: new Date(),
     ...activity
   };
@@ -97,4 +105,9 @@ export const getUserHistory = async () => {
     // Fallback to localStorage
     return JSON.parse(localStorage.getItem('jarvis_activity_logs') || '[]');
   }
+};
+
+// Function to set user email in localStorage
+export const setUserEmail = (email: string) => {
+  localStorage.setItem(USER_EMAIL_KEY, email);
 };

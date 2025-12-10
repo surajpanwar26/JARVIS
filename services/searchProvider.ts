@@ -1,5 +1,5 @@
 
-import { config, hasKey } from "./config";
+import { config, hasKey, getApiUrl, getEnv } from "./config";
 import { GoogleGenAI } from "@google/genai";
 import { Source } from "../types";
 
@@ -64,7 +64,7 @@ const geminiSearch = async (query: string): Promise<SearchResult> => {
 const tavilySearch = async (query: string): Promise<SearchResult> => {
   if (!config.tavilyApiKey) throw new Error("Tavily Key missing");
 
-  const response = await fetch("https://api.tavily.com/search", {
+  const response = await fetch(getEnv('TAVILY_API_URL') || "https://api.tavily.com/search", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -104,10 +104,30 @@ const tavilySearch = async (query: string): Promise<SearchResult> => {
 
 // --- Image Augmentation ---
 const augmentImages = async (query: string, currentImages: string[]): Promise<string[]> => {
-    // If we have Pexels key, use it (High limit)
+    // New fallback sequence: Google Gemini → DuckDuckGo → Pexels → Unsplash → Hugging Face
+    
+    // 1. First try Google Gemini for image generation
+    // (Already handled in geminiSearch function)
+    
+    // 2. Try DuckDuckGo for image search
+    try {
+        // Using DuckDuckGo Images API through the backend proxy
+        const response = await fetch(`${getApiUrl('/api/duckduckgo/images')}?query=${encodeURIComponent(query)}&max_results=5`);
+        if (response.ok) {
+            const data = await response.json();
+            const newImages = data.images || [];
+            return [...currentImages, ...newImages];
+        } else {
+            console.warn(`DuckDuckGo image search failed with status: ${response.status}`);
+        }
+    } catch(e) {
+        console.warn("DuckDuckGo image search failed:", e);
+    }
+    
+    // 3. If we have Pexels key, use it (High limit)
     if (hasKey(config.pexelsApiKey)) {
         try {
-            const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=5`, {
+            const res = await fetch(`${getEnv('PEXELS_API_URL') || "https://api.pexels.com/v1/search"}?query=${encodeURIComponent(query)}&per_page=5`, {
             headers: { Authorization: config.pexelsApiKey! }
             });
             if (res.ok) {
@@ -117,26 +137,100 @@ const augmentImages = async (query: string, currentImages: string[]): Promise<st
             }
         } catch(e) {}
     }
+    
+    // 4. Try Unsplash if Pexels fails or is not available
+    if (hasKey(config.unsplashAccessKey)) {
+        try {
+            const res = await fetch(`${getEnv('UNSPLASH_API_URL') || "https://api.unsplash.com/search/photos"}?query=${encodeURIComponent(query)}&per_page=5`, {
+                headers: { Authorization: `Client-ID ${config.unsplashAccessKey!}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const newImgs = data.results.map((img: any) => img.urls.small);
+                return [...currentImages, ...newImgs];
+            }
+        } catch(e) {}
+    }
+    
+    // 5. Try Hugging Face for image generation (deprioritized due to reliability issues)
+    // TODO: Implement Hugging Face image generation if needed
+    
+    // Log the prioritization of image sources
+    console.log("Image sources prioritized: Pexels/Unsplash > Hugging Face (due to reliability issues)");
+    
     return currentImages;
 };
 
 export const performSearch = async (query: string): Promise<SearchResult> => {
   let result: SearchResult = { text: "", sources: [], images: [] };
   
-  // Strategy: Prefer Tavily if key exists (better structured data), else strictly Gemini Search
-  if (hasKey(config.tavilyApiKey)) {
-    try {
-      result = await tavilySearch(query);
-    } catch (e: any) {
-      console.warn("Tavily failed, failing over to Gemini:", e?.message || String(e));
-      result = await geminiSearch(query);
-    }
-  } else {
-    // Single Key Mode
+  // NEW: Strategy based on your request - Always try Google Gemini first
+  // Fallback sequence: Google Gemini → Tavily → DuckDuckGo → Google Gemini (fallback)
+  try {
     result = await geminiSearch(query);
+  } catch (e: any) {
+    console.warn("Gemini search failed, trying Tavily:", e?.message || String(e));
+    // Only try Tavily if Gemini fails
+    if (hasKey(config.tavilyApiKey)) {
+      try {
+        result = await tavilySearch(query);
+      } catch (tavilyError: any) {
+        console.warn("Tavily failed, trying DuckDuckGo:", tavilyError?.message || String(tavilyError));
+        // Try DuckDuckGo as an additional fallback
+        try {
+          console.log(`Falling back to DuckDuckGo for query: ${query}`);
+          const response = await fetch(`${getApiUrl('/api/duckduckgo/search')}?query=${encodeURIComponent(query)}&max_results=10`);
+          if (response.ok) {
+            const data = await response.json();
+            
+            // Format the response to match SearchResult interface
+            const textResults = data.results?.map((r: any) => `\nTitle: ${r.title}\nContent: ${r.content}`).join('') || '';
+            const sources = data.results?.map((r: any) => ({ title: r.title, uri: r.url })) || [];
+            const images = data.images || [];
+            
+            result = {
+              text: data.answer || textResults,
+              sources: sources,
+              images: images
+            };
+          } else {
+            throw new Error(`DuckDuckGo API returned status ${response.status}`);
+          }
+        } catch (ddgError: any) {
+          console.warn("DuckDuckGo failed, falling back to Gemini:", ddgError?.message || String(ddgError));
+          // Final fallback to Gemini even if it failed before (might work on second try)
+          result = await geminiSearch(query);
+        }
+      }
+    } else {
+      // If no Tavily key, try DuckDuckGo then fall back to Gemini
+      try {
+        console.log(`Falling back to DuckDuckGo for query: ${query}`);
+        const response = await fetch(`${getApiUrl('/api/duckduckgo/search')}?query=${encodeURIComponent(query)}&max_results=10`);
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Format the response to match SearchResult interface
+          const textResults = data.results?.map((r: any) => `\nTitle: ${r.title}\nContent: ${r.content}`).join('') || '';
+          const sources = data.results?.map((r: any) => ({ title: r.title, uri: r.url })) || [];
+          const images = data.images || [];
+          
+          result = {
+            text: data.answer || textResults,
+            sources: sources,
+            images: images
+          };
+        } else {
+          throw new Error(`DuckDuckGo API returned status ${response.status}`);
+        }
+      } catch (ddgError: any) {
+        console.warn("DuckDuckGo failed, falling back to Gemini:", ddgError?.message || String(ddgError));
+        result = await geminiSearch(query);
+      }
+    }
   }
 
-  // Enhance images if possible
+  // Enhance images if possible using the new fallback sequence
   result.images = await augmentImages(query, result.images);
   
   return result;

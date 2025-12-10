@@ -1,6 +1,5 @@
-
 import { GoogleGenAI } from "@google/genai";
-import { config, hasKey, logConfigStatus, getApiUrl } from "./config";
+import { config, hasKey, logConfigStatus, getApiUrl, getEnv } from "./config";
 
 // Initialize logging once
 logConfigStatus();
@@ -21,13 +20,17 @@ interface LLMProvider {
 // --- 1. Hugging Face Implementation (Fallback) ---
 class HuggingFaceProvider implements LLMProvider {
   private apiKey: string;
-  private baseUrl = "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct";
+  private baseUrl = getEnv('HUGGINGFACE_API_URL') || "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct";
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
   }
 
   async generate(params: GenerationParams): Promise<string> {
+    // Optimize token usage based on request type
+    const isReportGeneration = params.prompt.toLowerCase().includes("report") || 
+                              (params.systemInstruction && params.systemInstruction.toLowerCase().includes("report"));
+    
     const fullPrompt = `<|begin_of_text|><|start_header_id|>system<|end_header_id|>
 
 ${params.systemInstruction || "You are a helpful assistant."}${params.jsonMode ? " Output strict JSON only." : ""}<|eot_id|><|start_header_id|>user<|end_header_id|>
@@ -46,7 +49,7 @@ ${params.prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
         body: JSON.stringify({
           inputs: fullPrompt,
           parameters: {
-            max_new_tokens: 4096, // Increased for report generation
+            max_new_tokens: isReportGeneration ? 4096 : 2048, // Reduced tokens for non-report generation
             return_full_text: false,
             temperature: 0.7
           }
@@ -79,14 +82,18 @@ ${params.prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 // --- 2. Groq Implementation (Optional High Speed) ---
 class GroqProvider implements LLMProvider {
   private apiKey: string;
-  private baseUrl = "https://api.groq.com/openai/v1/chat/completions";
-  private model = "llama-3.3-70b-versatile"; 
+  private baseUrl = getEnv('GROQ_API_URL') || "https://api.groq.com/openai/v1/chat/completions";
+  private model = getEnv('GROQ_MODEL') || "llama-3.3-70b-versatile";
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
   }
 
   async generate(params: GenerationParams): Promise<string> {
+    // Optimize token usage based on request type
+    const isReportGeneration = params.prompt.toLowerCase().includes("report") || 
+                              (params.systemInstruction && params.systemInstruction.toLowerCase().includes("report"));
+    
     const messages = [
       { role: "system", content: params.systemInstruction || "You are a helpful research assistant." },
       { role: "user", content: params.prompt }
@@ -107,6 +114,7 @@ class GroqProvider implements LLMProvider {
           model: this.model,
           messages: messages,
           temperature: 0.5,
+          max_tokens: isReportGeneration ? 4096 : 2048, // Reduced tokens for non-report generation
           response_format: params.jsonMode ? { type: "json_object" } : undefined
         })
       });
@@ -132,7 +140,7 @@ class GroqProvider implements LLMProvider {
 // --- 3. Google Gemini Implementation (PRIMARY) ---
 class GeminiProvider implements LLMProvider {
   private apiKey: string;
-  private model = "gemini-2.5-flash";
+  private model = getEnv('GEMINI_MODEL') || "gemini-2.5-flash";
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;

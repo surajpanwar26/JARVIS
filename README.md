@@ -138,6 +138,21 @@ JWT_SECRET_KEY=your_jwt_secret_key
 API_URL=http://localhost:${PORT:-8002}
 VITE_API_URL=http://localhost:${PORT:-8002}
 
+# API Endpoint URLs (Optional - for custom endpoints)
+# TAVILY_API_URL=https://api.tavily.com/search
+# VITE_TAVILY_API_URL=https://api.tavily.com/search
+# PEXELS_API_URL=https://api.pexels.com/v1/search
+# VITE_PEXELS_API_URL=https://api.pexels.com/v1/search
+# UNSPLASH_API_URL=https://api.unsplash.com/search/photos
+# VITE_UNSPLASH_API_URL=https://api.unsplash.com/search/photos
+# GROQ_API_URL=https://api.groq.com/openai/v1/chat/completions
+# HUGGINGFACE_API_URL=https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct
+# GEMINI_API_URL=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent
+
+# Model Names (Optional - for custom models)
+# GROQ_MODEL=llama-3.3-70b-versatile
+# GEMINI_MODEL=gemini-2.5-flash
+
 # Port Configuration (Optional)
 # PORT=8002
 # FRONTEND_PORT=5173

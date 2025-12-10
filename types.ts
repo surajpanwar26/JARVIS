@@ -55,4 +55,5 @@ export interface AgentState {
   sources: Source[];
   images: string[];
   report: string;
+  rawSearchResults?: any[];
 }

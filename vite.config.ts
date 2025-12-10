@@ -10,9 +10,10 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      // Expose env vars to process.env for compatibility
-      'process.env': env,
-      // Also ensure standard Vite import.meta.env works by not overwriting default behavior too aggressively
+      // Expose only specific env vars to process.env for compatibility
+      'process.env.REACT_APP_API_URL': JSON.stringify(env.REACT_APP_API_URL || env.VITE_API_URL),
+      'process.env.NODE_ENV': JSON.stringify(mode),
+      // Add other specific environment variables as needed
     }
   }
 })

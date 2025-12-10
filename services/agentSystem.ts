@@ -1,4 +1,3 @@
-
 import { AgentEvent, AgentState, Source } from "../types";
 import { getLLMProvider, getReportLLM } from "./llmProvider";
 import { performSearch } from "./searchProvider";
@@ -34,26 +33,41 @@ Format: Return ONLY a raw JSON array of strings.`;
       
       // Clean up potential markdown code blocks from response
       const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
-      let queries = [];
-      try {
-          queries = JSON.parse(jsonStr);
-      } catch (parseError) {
-          console.warn("JSON Parse failed for plan, using regex fallback");
-          // Fallback regex to extract strings inside quotes if JSON parse fails
-          const matches = jsonStr.match(/"([^"]+)"/g);
-          if (matches) {
-            queries = matches.map(m => m.replace(/"/g, ''));
-          } else {
-            throw new Error("Could not parse plan");
-          }
-      }
+      let queries: string[] = [];
       
-      this.emit({ type: 'plan', agentName: 'Editor', message: `Research Outline: ${queries.join(', ')}`, timestamp: new Date() });
+      try {
+        const parsed = JSON.parse(jsonStr);
+        if (Array.isArray(parsed)) {
+          queries = parsed;
+        } else {
+          throw new Error("Parsed result is not an array");
+        }
+      } catch (parseErr) {
+        console.warn("JSON Parsing failed, trying regex extraction...", parseErr);
+        const arrayMatch = jsonStr.match(/\[[^\]]*\]/);
+        if (arrayMatch) {
+          try {
+            const parsed = JSON.parse(arrayMatch[0]);
+            if (Array.isArray(parsed)) {
+              queries = parsed;
+            } else {
+              queries = [state.topic]; // Fallback
+            }
+          } catch (secondParseErr) {
+            console.error("Second parsing attempt failed", secondParseErr);
+            queries = [state.topic]; // Fallback
+          }
+        } else {
+          queries = [state.topic]; // Ultimate fallback
+        }
+      }
+
+      this.emit({ type: 'plan', agentName: 'Editor', message: `Research plan created with ${queries.length} queries`, data: queries, timestamp: new Date() });
       return { ...state, plan: queries };
     } catch (e: any) {
-      console.error("Planning Error", e);
-      this.emit({ type: 'error', message: `Planning failed: ${e.message}. Reverting to basic search.`, timestamp: new Date() });
-      return { ...state, plan: [state.topic] };
+      console.error(e);
+      this.emit({ type: 'error', message: `Planning failed: ${e.message}`, timestamp: new Date() });
+      return { ...state, plan: [state.topic] }; // Fallback to basic search
     }
   }
 }
@@ -61,69 +75,154 @@ Format: Return ONLY a raw JSON array of strings.`;
 // --- 2. RESEARCHER AGENT ---
 class ResearcherAgent extends BaseAgent {
   async execute(state: AgentState): Promise<AgentState> {
-    const newContext = [...state.context];
+    this.emit({ type: 'agent_action', agentName: 'Researcher', message: 'Executing web search...', timestamp: new Date() });
+
+    const newContexts: string[] = [];
+    const newSources: Source[] = [...state.sources];
+    const seenUrls = new Set(state.sources.map(s => s.uri));
+
+    // Deduplicate plan items
+    const uniqueQueries = [...new Set(state.plan)];
     
-    const uniqueSources = new Map<string, Source>();
-    state.sources.forEach(s => uniqueSources.set(s.uri, s));
-    
-    const uniqueImages = new Set<string>(state.images);
-
-    this.emit({ type: 'agent_action', agentName: 'Researcher', message: 'Deploying autonomous scrapers...', timestamp: new Date() });
-
-    for (const [index, query] of state.plan.entries()) {
-      this.emit({ type: 'search', agentName: 'Researcher', message: `Gathering intelligence (${index + 1}/${state.plan.length}): "${query}"`, timestamp: new Date() });
-      
-      try {
-        const results = await performSearch(query);
-        newContext.push(`### Data for "${query}":\n${results.text}`);
-
-        for (const s of results.sources) {
-          if (uniqueSources.size >= MAX_UNIQUE_SOURCES) break;
-          if (!uniqueSources.has(s.uri)) {
-            uniqueSources.set(s.uri, s);
-            this.emit({ type: 'source', message: `Indexed: ${s.title}`, data: s, timestamp: new Date() });
+    try {
+      for (const query of uniqueQueries) {
+        this.emit({ type: 'search', agentName: 'Researcher', message: `Searching: ${query}`, timestamp: new Date() });
+        
+        const result = await performSearch(query);
+        
+        // Process results
+        // Add context
+        if (result.text) {
+          newContexts.push(result.text);
+        }
+        
+        // Add sources
+        for (const source of result.sources) {
+          if (!seenUrls.has(source.uri)) {
+            seenUrls.add(source.uri);
+            newSources.push(source);
           }
         }
-
-        for (const img of results.images) {
-          if (uniqueImages.size >= MAX_UNIQUE_IMAGES) break;
-          if (!uniqueImages.has(img)) {
-            uniqueImages.add(img);
-            this.emit({ type: 'image', message: 'Asset Acquired', data: img, timestamp: new Date() });
-          }
+        
+        // Add images to state for ImageAgent to process
+        if (result.images && Array.isArray(result.images)) {
+          // Store raw search results for ImageAgent to process
+          state.rawSearchResults = state.rawSearchResults || [];
+          state.rawSearchResults.push(result);
         }
-
-      } catch (err: any) {
-        this.emit({ type: 'error', message: `Search failed for "${query}": ${err.message}`, timestamp: new Date() });
+        
+        // Respect limits
+        if (newSources.length >= MAX_UNIQUE_SOURCES) break;
       }
-    }
 
-    this.emit({ type: 'agent_action', agentName: 'Researcher', message: `Data collection complete. Indexed ${uniqueSources.size} sources and ${uniqueImages.size} assets.`, timestamp: new Date() });
-    return { 
-      ...state, 
-      context: newContext, 
-      sources: Array.from(uniqueSources.values()), 
-      images: Array.from(uniqueImages) 
-    };
+      this.emit({ type: 'agent_action', agentName: 'Researcher', message: `Web search completed. Found ${newContexts.length} new contexts.`, timestamp: new Date() });
+      return { 
+        ...state, 
+        context: [...state.context, ...newContexts],
+        sources: newSources
+      };
+    } catch (e: any) {
+      console.error(e);
+      this.emit({ type: 'error', message: `Research failed: ${e.message}`, timestamp: new Date() });
+      return state; // Return unchanged state on error
+    }
   }
 }
 
-// --- 3. REVIEWER AGENT ---
-class ReviewerAgent extends BaseAgent {
+// --- 3. IMAGE AGENT ---
+class ImageAgent extends BaseAgent {
   async execute(state: AgentState): Promise<AgentState> {
-    this.emit({ type: 'agent_action', agentName: 'Reviewer', message: 'Validating gathered intelligence...', timestamp: new Date() });
-    
-    if (state.context.length === 0) {
-       this.emit({ type: 'thought', agentName: 'Reviewer', message: 'Insufficient data. Flagging for revision.', timestamp: new Date() });
-    } else {
-       this.emit({ type: 'thought', agentName: 'Reviewer', message: `Validation passed. ${state.sources.length} sources authenticated.`, timestamp: new Date() });
+    // Skip image extraction for quick research to optimize tokens
+    if (!state.isDeep) {
+      this.emit({ type: 'agent_action', agentName: 'ImageExtractor', message: 'Skipping image extraction for quick research to optimize token usage', timestamp: new Date() });
+      return state;
     }
+
+    this.emit({ type: 'agent_action', agentName: 'ImageExtractor', message: 'Extracting visual assets...', timestamp: new Date() });
     
-    return state;
+    const seenImages = new Set(state.images);
+    const newImages: string[] = [];
+
+    try {
+      // Extract images from raw search results first
+      if (state.rawSearchResults && Array.isArray(state.rawSearchResults)) {
+        for (const searchResult of state.rawSearchResults) {
+          if (searchResult.images && Array.isArray(searchResult.images)) {
+            for (const imgUrl of searchResult.images) {
+              if (!seenImages.has(imgUrl) && newImages.length < MAX_UNIQUE_IMAGES) {
+                seenImages.add(imgUrl);
+                newImages.push(imgUrl);
+                this.emit({ type: 'image', agentName: 'ImageExtractor', message: 'Visual asset intercepted', data: imgUrl, timestamp: new Date() });
+              }
+            }
+          }
+        }
+      }
+      
+      // Fallback: extract image URLs from context
+      const allContext = state.context.join(' ');
+      const imageRegex = /(https?:\/\/[^\s]+?\.(?:jpg|jpeg|png|gif|webp))(?:\?[^\s]*)?/gi;
+      let match;
+      
+      while ((match = imageRegex.exec(allContext)) !== null) {
+        const imgUrl = match[1];
+        if (!seenImages.has(imgUrl) && newImages.length < MAX_UNIQUE_IMAGES) {
+          seenImages.add(imgUrl);
+          newImages.push(imgUrl);
+          this.emit({ type: 'image', agentName: 'ImageExtractor', message: 'Visual asset intercepted', data: imgUrl, timestamp: new Date() });
+        }
+      }
+
+      this.emit({ type: 'agent_action', agentName: 'ImageExtractor', message: `Image extraction completed. Found ${newImages.length} new assets.`, timestamp: new Date() });
+      return { ...state, images: [...state.images, ...newImages] };
+    } catch (e: any) {
+      console.error(e);
+      this.emit({ type: 'error', message: `Image extraction failed: ${e.message}`, timestamp: new Date() });
+      return state;
+    }
   }
 }
 
-// --- 4. WRITER AGENT ---
+// --- 4. SOURCE AGENT ---
+class SourceAgent extends BaseAgent {
+  async execute(state: AgentState): Promise<AgentState> {
+    // For quick research, we'll do minimal source processing to optimize tokens
+    if (!state.isDeep) {
+      this.emit({ type: 'agent_action', agentName: 'SourceProcessor', message: 'Minimal source processing for quick research to optimize token usage', timestamp: new Date() });
+      // Just ensure we have unique sources without extensive processing
+      const uniqueSources = state.sources.filter((source, index, self) => 
+        index === self.findIndex(s => s.uri === source.uri)
+      );
+      return { ...state, sources: uniqueSources };
+    }
+
+    this.emit({ type: 'agent_action', agentName: 'SourceProcessor', message: 'Validating and enriching sources...', timestamp: new Date() });
+    
+    try {
+      // Validate and enrich sources
+      const enrichedSources: Source[] = [];
+      const seenUrls = new Set();
+      
+      for (const source of state.sources) {
+        // Dedupe
+        if (seenUrls.has(source.uri)) continue;
+        seenUrls.add(source.uri);
+        
+        // Minimal enrichment - in a production system, you might fetch page titles, etc.
+        enrichedSources.push(source);
+      }
+
+      this.emit({ type: 'source', agentName: 'SourceProcessor', message: `Source validation completed. Total unique sources: ${enrichedSources.length}`, data: enrichedSources, timestamp: new Date() });
+      return { ...state, sources: enrichedSources };
+    } catch (e: any) {
+      console.error(e);
+      this.emit({ type: 'error', message: `Source processing failed: ${e.message}`, timestamp: new Date() });
+      return state;
+    }
+  }
+}
+
+// --- 5. WRITER AGENT ---
 class WriterAgent extends BaseAgent {
   async execute(state: AgentState): Promise<AgentState> {
     const llm = getReportLLM();
@@ -131,6 +230,9 @@ class WriterAgent extends BaseAgent {
     this.emit({ type: 'agent_action', agentName: 'Writer', message: 'Drafting final report...', timestamp: new Date() });
 
     const role = state.isDeep ? "Chief Technical Writer" : "Briefing Specialist";
+    const lengthGuidance = state.isDeep 
+      ? "Create a comprehensive, well-structured report with detailed analysis and multiple sections. Aim for 2500+ words with proper headings, subheadings, and organized content, emphasizing a detailed executive summary with 5-6 paragraphs." 
+      : "Create a comprehensive overview report with key points and essential insights. Aim for 1500-2000 words with proper structure, emphasizing a detailed executive summary with 3-5 paragraphs.";
     
     try {
       const stream = llm.generateStream({
@@ -139,8 +241,46 @@ class WriterAgent extends BaseAgent {
 Context Data:
 ${state.context.join('\n\n')}
 
-Task: Compile a structured report. Use Markdown.`,
-        systemInstruction: `You are the ${role}. Structure the report professionally.`,
+${state.isDeep ? 
+`Task: Create a comprehensive, well-structured report with the following structure:
+
+# Executive Summary
+Provide a comprehensive executive summary with 5-6 detailed paragraphs covering different aspects of the topic.
+
+# Introduction
+Provide background and context about the topic.
+
+# Detailed Analysis
+Create 4-5 main sections with detailed analysis.
+
+# Key Findings
+Present key findings as bullet points.
+
+# Conclusions and Recommendations
+Summarize conclusions and provide actionable recommendations.
+
+Use proper Markdown formatting with headings and lists.` : 
+`Task: Create a comprehensive overview report with the following structure:
+
+# Executive Summary
+Provide a comprehensive executive summary with 3-5 detailed paragraphs covering different aspects of the topic.
+
+# Key Aspects
+Cover the most important aspects of the topic.
+
+# Analysis and Insights
+Provide critical analysis with supporting evidence.
+
+# Key Findings
+Present key findings as bullet points.
+
+# Conclusions and Recommendations
+Summarize conclusions and provide recommendations.
+
+Use proper Markdown formatting with headings and lists.`}
+
+Ensure the report is professionally formatted and comprehensive.`,
+        systemInstruction: `You are the ${role}. Structure the report professionally. ${lengthGuidance} Focus only on information that will be displayed in the UI. Create a well-organized, comprehensive report with proper headings, subheadings, and lists. Avoid unnecessary elaboration.`,
         thinkingBudget: state.isDeep ? 1024 : undefined 
       });
 
@@ -166,7 +306,7 @@ Please check API keys and try again.` };
   }
 }
 
-// --- 5. PUBLISHER AGENT ---
+// --- 6. PUBLISHER AGENT ---
 class PublisherAgent extends BaseAgent {
   async execute(state: AgentState): Promise<AgentState> {
     this.emit({ type: 'agent_action', agentName: 'Publisher', message: 'Finalizing formatting and publishing...', timestamp: new Date() });
@@ -195,63 +335,56 @@ export class ResearchWorkflow {
       // Short timeout check
       useBackend = await api.health();
     } catch (e) {
-      console.warn("Backend unavailable, default to frontend agents.");
+      console.warn("Backend health check failed, using frontend-only mode", e);
     }
-    
-    if (useBackend) {
-       this.emit({ type: 'info', message: 'Connected to Neural Backend (Python/LangGraph)', timestamp: new Date() });
-       try {
-         const result = await api.startResearch(topic, isDeep);
-         this.emit({ 
-            type: 'complete', 
-            message: 'Research Completed by Backend', 
-            data: result, 
-            timestamp: new Date() 
-         });
-       } catch (e: any) {
-         console.error("Backend Task Failed", e);
-         this.emit({ type: 'error', message: `Backend Error: ${e.message}`, timestamp: new Date() });
-         this.emit({ type: 'info', message: 'Falling back to local agents...', timestamp: new Date() });
-         // Fallback to frontend agents if backend fails
-         this.runFrontendAgents(topic, isDeep);
-       }
-    } else {
-       this.emit({ type: 'info', message: 'Running in Browser Mode (TypeScript Agents)', timestamp: new Date() });
-       await this.runFrontendAgents(topic, isDeep);
-    }
-  }
 
-  private async runFrontendAgents(topic: string, isDeep: boolean) {
-    let state: AgentState = {
+    // 2. Initialize Agents
+    const editor = new EditorAgent(this.emit.bind(this));
+    const researcher = new ResearcherAgent(this.emit.bind(this));
+    const imager = new ImageAgent(this.emit.bind(this));
+    const sourcer = new SourceAgent(this.emit.bind(this));
+    const writer = new WriterAgent(this.emit.bind(this));
+    const publisher = new PublisherAgent(this.emit.bind(this));
+
+    // 3. Create Initial State
+    const initialState: AgentState = {
       topic,
       isDeep,
       plan: [],
       context: [],
       sources: [],
       images: [],
-      report: ''
+      report: ""
     };
 
+    // 4. Execute Agent Pipeline
     try {
-      this.emit({ type: 'log', message: 'Chief Editor: Initializing Workflow', timestamp: new Date() });
+      this.emit({ type: 'log', message: `Starting ${isDeep ? 'Deep' : 'Quick'} Research on: ${topic}`, timestamp: new Date() });
       
-      const editor = new EditorAgent(e => this.emit(e));
-      state = await editor.execute(state);
+      // Stage 1: Planning
+      const plannedState = await editor.execute(initialState);
       
-      const researcher = new ResearcherAgent(e => this.emit(e));
-      state = await researcher.execute(state);
+      // Stage 2: Research
+      const researchedState = await researcher.execute(plannedState);
       
-      const reviewer = new ReviewerAgent(e => this.emit(e));
-      state = await reviewer.execute(state);
+      // Stage 3: Image Extraction (skip for quick research to optimize tokens)
+      const imagedState = await imager.execute(researchedState);
       
-      const writer = new WriterAgent(e => this.emit(e));
-      state = await writer.execute(state);
-
-      const publisher = new PublisherAgent(e => this.emit(e));
-      state = await publisher.execute(state);
-
+      // Stage 4: Source Processing
+      const sourcedState = await sourcer.execute(imagedState);
+      
+      // Stage 5: Writing
+      const writtenState = await writer.execute(sourcedState);
+      
+      // Stage 6: Publishing
+      const finalState = await publisher.execute(writtenState);
+      
+      this.emit({ type: 'log', message: 'Research Pipeline Completed Successfully', timestamp: new Date() });
+      return finalState;
     } catch (e: any) {
-      this.emit({ type: 'error', message: `Workflow Critical Failure: ${e.message}`, timestamp: new Date() });
+      console.error("Pipeline Error", e);
+      this.emit({ type: 'error', message: `Pipeline crashed: ${e.message}`, timestamp: new Date() });
+      throw e;
     }
   }
 }

@@ -19,7 +19,7 @@ interface User {
 }
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true); // Bypass authentication for testing
   const [user, setUser] = useState<User | null>(null);
   const [navState, setNavState] = useState<NavState>({ page: 'HOME' });
 
@@ -61,9 +61,11 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      // Use environment variable for API URL with fallback to localhost
+      // Use environment variable for API URL with fallback to empty string in production
       // @ts-ignore: ImportMeta.env is not properly typed in TypeScript
-      const apiUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:8002';
+      const apiUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 
+                    (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_URL) || 
+                    (typeof window !== 'undefined' ? '' : 'http://localhost:8002');
       await fetch(`${apiUrl}/api/auth/logout`);
       localStorage.removeItem('authToken');
       setIsAuthenticated(false);

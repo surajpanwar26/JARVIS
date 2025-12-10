@@ -1,7 +1,7 @@
 // In Vite (local development), keys are exposed via import.meta.env
 // We prioritize this for local builds.
 
-const getEnv = (key: string): string | undefined => {
+export const getEnv = (key: string): string | undefined => {
   let val: string | undefined = undefined;
 
   // 1. Try Vite standard (import.meta.env) - check for VITE_ prefixed variables first
@@ -43,6 +43,10 @@ export const config = {
   googleApiKey: getEnv('GOOGLE_API_KEY') || getEnv('API_KEY'),
   // API URL configuration
   apiUrl: getEnv('API_URL') || getEnv('REACT_APP_API_URL') || getEnv('VITE_API_URL'),
+  // API Endpoint URLs
+  tavilyApiUrl: getEnv('VITE_TAVILY_API_URL') || getEnv('TAVILY_API_URL'),
+  pexelsApiUrl: getEnv('VITE_PEXELS_API_URL') || getEnv('PEXELS_API_URL'),
+  unsplashApiUrl: getEnv('VITE_UNSPLASH_API_URL') || getEnv('UNSPLASH_API_URL'),
 };
 
 // Debug helper to print status to console
