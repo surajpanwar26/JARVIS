@@ -55,8 +55,23 @@ export const QuickResultPage: React.FC<QuickResultPageProps> = ({ initialQuery, 
         setStatus(ResearchStatus.ERROR);
         setLogs(prev => [...prev, { id: generateId(), message: event.message || 'Error', timestamp: new Date(), type: 'error' }]);
       } else if (event.type === 'report_chunk') {
+        // Only set to SYNTHESIZING when we start receiving report chunks
+        if (status !== ResearchStatus.SYNTHESIZING) {
+          setStatus(ResearchStatus.SYNTHESIZING);
+        }
         setStreamedReport(prev => prev + event.data);
       } else {
+        // Update status based on agent actions
+        if (event.type === 'agent_action') {
+          if (event.agentName === 'Editor' && event.message?.includes('Analyzing request')) {
+            setStatus(ResearchStatus.PLANNING);
+          } else if (event.agentName === 'Researcher' && event.message?.includes('Executing web search')) {
+            setStatus(ResearchStatus.SEARCHING);
+          } else if (event.agentName === 'Writer' && event.message?.includes('Drafting final report')) {
+            setStatus(ResearchStatus.SYNTHESIZING);
+          }
+        }
+        
         setLogs(prev => [...prev, { 
           id: generateId(), 
           message: event.message || '', 

@@ -75,6 +75,15 @@ function App() {
     }
   };
 
+  const handleLogoutWithConfirmation = () => {
+    // Show confirmation dialog
+    const confirmed = window.confirm('Are you sure you want to log out?');
+    if (confirmed) {
+      handleLogout();
+    }
+    // If user clicks "No", the function simply returns and user stays on the page
+  };
+
   if (!isAuthenticated) {
     return <LoginPage onLogin={handleLogin} />;
   }
@@ -91,7 +100,7 @@ function App() {
       {/* Main Content View Port */}
       <main className="relative z-10 flex-1 h-screen overflow-hidden">
         {navState.page === 'HOME' && (
-          <HomePage onNavigate={handleNavigate} onLogout={handleLogout} />
+          <HomePage onNavigate={handleNavigate} onLogout={handleLogoutWithConfirmation} />
         )}
         
         {navState.page === 'QUICK_RESULT' && (
