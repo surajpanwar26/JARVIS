@@ -25,6 +25,8 @@ services:
         sync: false
       - key: JWT_SECRET_KEY
         sync: false
+      - key: CORS_ORIGINS
+        value: https://jarvis-frontend.onrender.com
 
   # Frontend Service
   - type: web
@@ -35,14 +37,14 @@ services:
     staticPublishPath: dist
     envVars:
       - key: REACT_APP_API_URL
-        value: https://jarvis-backend-1jy6.onrender.com
-# Prevent Docker autodetection
+        value: https://jarvis-backend.onrender.com
 
+# Prevent Docker autodetection
 # Define routes for proper proxying
 routes:
   - type: rewrite
     source: /api/*
-    destination: https://jarvis-backend-1jy6.onrender.com/api/
+    destination: https://jarvis-backend.onrender.com/api/
 
 # Health check configuration
 healthCheckPath: /health
