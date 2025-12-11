@@ -135,8 +135,17 @@ def generate_user_id(email: str) -> str:
 @router.get("/login")
 async def login_via_google(request: Request):
     """Initiate Google OAuth login"""
-    # Use environment variable for redirect URI with fallback to localhost
-    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI", f"http://localhost:{os.getenv('PORT', '8002')}/api/auth/callback")
+    # Determine the correct redirect URI based on the request origin
+    # Check if this is a production environment
+    is_production = "jarvis-backend-nzcg.onrender.com" in request.headers.get("host", "")
+    
+    if is_production:
+        # Use the production frontend URL
+        redirect_uri = "https://jarvis-l8gx.onrender.com/api/auth/callback"
+    else:
+        # Use environment variable for redirect URI with fallback to localhost
+        redirect_uri = os.getenv("GOOGLE_REDIRECT_URI", f"http://localhost:{os.getenv('PORT', '8002')}/api/auth/callback")
+    
     # Force account selection by adding prompt parameter
     return await oauth.google.authorize_redirect(
         request, 
@@ -191,7 +200,21 @@ async def auth_via_google(request: Request):
             except Exception as e:
                 print(f"Failed to store user in MongoDB: {e}")
         
-        # Return HTML that communicates with parent window and closes popup
+        # Determine redirect URL based on environment
+        origin = request.headers.get("origin", "")
+        referer = request.headers.get("referer", "")
+        
+        # Check if this is a production environment
+        is_production = "jarvis-backend-nzcg.onrender.com" in request.headers.get("host", "")
+        
+        if is_production:
+            # Redirect to production frontend
+            redirect_url = "https://jarvis-l8gx.onrender.com"
+        else:
+            # Redirect to development frontend
+            redirect_url = origin or referer or f"http://localhost:{os.getenv('FRONTEND_PORT', '5173')}"
+        
+        # Return HTML that communicates with parent window and redirects
         html_content = f"""
         <!DOCTYPE html>
         <html>
@@ -204,18 +227,19 @@ async def auth_via_google(request: Request):
                 localStorage.setItem('authToken', '{access_token}');
                 localStorage.setItem('jarvis_user_email', '{user["email"]}');
                 
-                // Communicate with parent window
+                // Communicate with parent window if this is a popup
                 if (window.opener) {{
                     window.opener.postMessage({{
                         type: 'oauth-success',
                         token: '{access_token}'
                     }}, '*');
+                    window.close();
+                }} else {{
+                    // Redirect to main application
+                    window.location.href = '{redirect_url}';
                 }}
-                
-                // Close popup window
-                window.close();
             </script>
-            <p>Authentication successful. This window will close automatically.</p>
+            <p>Authentication successful. Redirecting...</p>
         </body>
         </html>
         """

@@ -4,6 +4,8 @@ from datetime import datetime
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware import Middleware
+from starlette.middleware.sessions import SessionMiddleware
 from pydantic import BaseModel
 import asyncio
 import requests
@@ -19,6 +21,9 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI()
+
+# Add Session Middleware for OAuth
+app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY", "your-secret-key-change-in-production"))
 
 # CORS middleware
 # Get CORS origins from environment variable, with fallback to localhost for development
