@@ -290,6 +290,7 @@ class AggressiveFallbackProvider implements LLMProvider {
       throw new Error("No providers available for fallback");
     }
     
+    console.log(`[AGGRESSIVE FALLBACK] Starting fallback sequence with ${this.providers.length} providers`);
     const errors: string[] = [];
     
     for (let i = 0; i < this.providers.length; i++) {
@@ -309,12 +310,18 @@ class AggressiveFallbackProvider implements LLMProvider {
         console.warn(`[AGGRESSIVE FALLBACK] Provider ${i + 1} failed:`, error.message);
         errors.push(`Provider ${i + 1}: ${error.message}`);
         
+        // If this is the last provider, we'll throw the aggregated error
+        if (i === this.providers.length - 1) {
+          console.log(`[AGGRESSIVE FALLBACK] All providers exhausted, throwing aggregated error`);
+          throw new Error(`ALL PROVIDERS FAILED. Errors: ${errors.join('; ')}`);
+        }
+        
         // Continue to next provider immediately
         console.log(`[AGGRESSIVE FALLBACK] Falling back to next provider...`);
       }
     }
     
-    // If all providers fail, throw a comprehensive error
+    // This should never be reached, but just in case
     throw new Error(`ALL PROVIDERS FAILED. Errors: ${errors.join('; ')}`);
   }
   

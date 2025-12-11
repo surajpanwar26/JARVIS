@@ -364,67 +364,58 @@ Ensure the report is well-organized and professionally formatted using proper Ma
       return { ...state, report: fullReport };
     } catch (e: any) {
       console.error(e);
-      // ULTIMATE FALLBACK: Catch ANY error and provide emergency report
-      this.emit({ 
-        type: 'agent_action', 
-        agentName: 'Writer', 
-        message: 'INSTANT EMERGENCY FALLBACK ACTIVATED: Generating emergency report.', 
-        timestamp: new Date() 
-      });
+      // Check if this is an "ALL PROVIDERS FAILED" error from our fallback mechanism
+      const errDetail = e.message || JSON.stringify(e);
       
-      // Create emergency report for ANY error
-      const emergencyReport = `# Emergency Report for "${state.topic}"
+      if (errDetail.includes('ALL PROVIDERS FAILED')) {
+        // Only generate emergency report if ALL providers have failed
+        this.emit({ 
+          type: 'agent_action', 
+          agentName: 'Writer', 
+          message: 'ALL PROVIDERS FAILED: Generating emergency report.', 
+          timestamp: new Date() 
+        });
+        
+        // Create emergency report only when all providers fail
+        const emergencyReport = `# Report Generation Failed - All Providers Unavailable
 
 ## System Status
-An emergency fallback was triggered during report generation due to technical constraints.
+All configured LLM providers are currently unavailable, preventing normal report generation.
 
 ## Topic Analysis
 **Subject**: ${state.topic}
 
-This emergency report was generated because the normal report generation process encountered an unrecoverable error. In a functioning system, this would contain detailed analysis and insights gathered from multiple reliable sources.
+This report could not be generated because all configured LLM providers (Google Gemini, Groq, Hugging Face) are inaccessible. In a properly configured system with accessible providers, this would contain detailed analysis and insights.
 
-## Error Context
-The system encountered an issue that prevented normal report generation. This could be due to:
-- LLM provider unavailability
-- Network connectivity problems
-- API rate limiting
-- Service interruptions
-- Configuration issues
-- Other technical constraints
-
-## Emergency Content
-In place of the detailed analysis, here is structured information about your topic:
-
-### Overview
-${state.topic} represents the core subject of your research inquiry. In normal operation, the system would provide comprehensive coverage of this topic with supporting evidence and citations.
-
-### Expected Content Structure
-A full report would typically include:
-- Executive Summary
-- Detailed Analysis
-- Key Findings
-- Supporting Evidence
-- Conclusions and Recommendations
-
-## System Recommendations
-To resolve this issue:
-1. Check API key configurations
-2. Verify network connectivity
-3. Ensure LLM providers are accessible
-4. Review system logs for specific error details
-5. Restart services if necessary
+## Configuration Check
+Please verify the following:
+1. API keys are correctly configured in your .env file
+2. Network connectivity to all provider endpoints
+3. Provider services are operational
+4. Rate limits have not been exceeded
 
 ## Next Steps
-The research pipeline has completed with this emergency report. You can:
-- Retry the research with the same parameters
-- Check system configuration
-- Contact system administrator for assistance
+To resolve this issue:
+- Check your .env file for correct API keys
+- Verify network connectivity
+- Confirm provider service status
+- Restart the application after making corrections
 
----
-*Emergency Fallback Report Generated ${new Date().toISOString()}*`;
-
-      this.emit({ type: 'agent_action', agentName: 'Writer', message: 'Emergency report generated successfully.', timestamp: new Date() });
-      return { ...state, report: emergencyReport };
+*Report Generation Failed: ${errDetail}*`;
+        
+        this.emit({ type: 'agent_action', agentName: 'Writer', message: 'Emergency report generated due to complete provider failure.', timestamp: new Date() });
+        return { ...state, report: emergencyReport };
+      } else {
+        // Re-throw the error to allow the fallback mechanism to work
+        // This should not happen with our improved fallback provider, but just in case
+        this.emit({ 
+          type: 'error', 
+          agentName: 'Writer',
+          message: `Unexpected error during report generation: ${errDetail}`, 
+          timestamp: new Date() 
+        });
+        throw e;
+      }
     }
   }
 }
