@@ -10,21 +10,23 @@ services:
       - key: PYTHONPATH
         value: /opt/render/project/src
       - key: GOOGLE_API_KEY
-        sync: false
+        sync: true
       - key: GROQ_API_KEY
-        sync: false
+        sync: true
       - key: TAVILY_API_KEY
-        sync: false
+        sync: true
       - key: MONGODB_URI
-        sync: false
+        sync: true
       - key: GOOGLE_CLIENT_ID
-        sync: false
+        sync: true
       - key: GOOGLE_CLIENT_SECRET
-        sync: false
+        sync: true
       - key: SESSION_SECRET_KEY
-        sync: false
+        sync: true
       - key: JWT_SECRET_KEY
-        sync: false
+        sync: true
+      - key: HUGGINGFACE_API_KEY
+        sync: true
       - key: CORS_ORIGINS
         value: https://jarvis-l8gx.onrender.com
       - key: ENVIRONMENT

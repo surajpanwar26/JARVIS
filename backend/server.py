@@ -122,6 +122,7 @@ class LLMRequest(BaseModel):
     json_mode: Optional[bool] = False
     thinking_budget: Optional[int] = None
     is_report: Optional[bool] = False
+    provider: Optional[str] = None  # Add provider parameter
 
 # Pydantic models for MongoDB
 class User(BaseModel):
@@ -302,7 +303,8 @@ async def generate_llm_content_endpoint(request: LLMRequest):
         result = generate_llm_content(
             prompt=request.prompt,
             system_instruction=request.system_instruction,
-            is_report=bool(request.is_report)
+            is_report=bool(request.is_report),
+            provider=request.provider  # Pass provider parameter
         )
         
         return result

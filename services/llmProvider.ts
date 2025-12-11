@@ -28,10 +28,6 @@ class HuggingFaceProvider implements LLMProvider {
   }
 
   async generate(params: GenerationParams): Promise<string> {
-    // Optimize token usage based on request type
-    const isReportGeneration = params.prompt.toLowerCase().includes("report") || 
-                              (params.systemInstruction && params.systemInstruction.toLowerCase().includes("report"));
-    
     try {
       const response = await fetch(this.baseUrl, {
         method: "POST",
@@ -42,7 +38,6 @@ class HuggingFaceProvider implements LLMProvider {
           prompt: params.prompt,
           systemInstruction: params.systemInstruction,
           provider: "huggingface",
-          maxTokens: isReportGeneration ? 2048 : 1024,
           jsonMode: params.jsonMode
         })
       });
@@ -72,49 +67,34 @@ class HuggingFaceProvider implements LLMProvider {
 // --- 2. Groq Implementation (Optional High Speed) ---
 class GroqProvider implements LLMProvider {
   private apiKey: string;
-  private baseUrl = getEnv('GROQ_API_URL') || "https://api.groq.com/openai/v1/chat/completions";
-  private model = getEnv('GROQ_MODEL') || "llama-3.3-70b-versatile";
+  // Use the backend endpoint for Groq
+  private baseUrl = "/api/llm/generate";
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
   }
 
   async generate(params: GenerationParams): Promise<string> {
-    // Optimize token usage based on request type
-    const isReportGeneration = params.prompt.toLowerCase().includes("report") || 
-                              (params.systemInstruction && params.systemInstruction.toLowerCase().includes("report"));
-    
-    const messages = [
-      { role: "system", content: params.systemInstruction || "You are a helpful research assistant." },
-      { role: "user", content: params.prompt }
-    ];
-
-    if (params.jsonMode) {
-      messages[0] = { ...messages[0], content: messages[0].content + " You must output valid JSON only." };
-    }
-
     try {
       const response = await fetch(this.baseUrl, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${this.apiKey}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: this.model,
-          messages: messages,
-          temperature: 0.5,
-          max_tokens: isReportGeneration ? 4096 : 2048, // Reduced tokens for non-report generation
-          response_format: params.jsonMode ? { type: "json_object" } : undefined
+          prompt: params.prompt,
+          systemInstruction: params.systemInstruction,
+          provider: "groq",
+          jsonMode: params.jsonMode
         })
       });
 
       if (!response.ok) {
-         const err = await response.text();
-         throw new Error(`Groq API Error (${response.status}): ${err}`);
+        throw new Error(`Groq API Error: ${response.statusText}`);
       }
+      
       const data = await response.json();
-      return data.choices[0]?.message?.content || "";
+      return data.result || data.content || "";
     } catch (error) {
       console.error("Groq Generation Failed:", error);
       throw error;
@@ -122,8 +102,12 @@ class GroqProvider implements LLMProvider {
   }
 
   async *generateStream(params: GenerationParams): AsyncGenerator<string, void, unknown> {
-    const text = await this.generate(params);
-    yield text;
+    const fullText = await this.generate(params);
+    const chunkSize = 50;
+    for (let i = 0; i < fullText.length; i += chunkSize) {
+      yield fullText.slice(i, i + chunkSize);
+      await new Promise(r => setTimeout(r, 10)); 
+    }
   }
 }
 

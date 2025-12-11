@@ -2,7 +2,7 @@ import os
 import requests
 import logging
 from requests.exceptions import Timeout
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 # Configure logging
 logging.basicConfig(
@@ -12,10 +12,16 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-def generate_llm_content(prompt: str, system_instruction: str = "", is_report: bool = False) -> Dict[str, Any]:
+def generate_llm_content(prompt: str, system_instruction: str = "", is_report: bool = False, provider: Optional[str] = None) -> Dict[str, Any]:
     """Generate content using LLM with fallback providers"""
-    logger.info("Generating LLM content with fallback support")
+    logger.info(f"Generating LLM content with fallback support, requested provider: {provider}")
     
+    # If a specific provider is requested, try only that provider
+    if provider:
+        logger.info(f"Attempting to use specific provider: {provider}")
+        return _generate_with_specific_provider(provider, prompt, system_instruction, is_report)
+    
+    # Otherwise, use the fallback chain
     # Try providers in order of preference (Google Gemini -> Groq -> Hugging Face)
     # Hugging Face deprioritized due to reliability issues
     providers = []
@@ -191,3 +197,108 @@ This is a fallback response because all configured AI providers are currently un
 Please check your API keys and network connectivity, or try again later."""
 
     return {"content": fallback_content, "provider": "Fallback", "attempted_providers": attempted_providers}
+
+def _generate_with_specific_provider(provider_name: str, prompt: str, system_instruction: str, is_report: bool) -> Dict[str, Any]:
+    """Generate content using a specific provider"""
+    logger.info(f"Generating content with specific provider: {provider_name}")
+    
+    try:
+        if provider_name.lower() == "gemini":
+            google_api_key = os.getenv("GOOGLE_API_KEY")
+            if not google_api_key:
+                raise Exception("Google API key not configured")
+            
+            url = f"{os.getenv('GEMINI_API_URL', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent')}?key={google_api_key}"
+            payload = {
+                "contents": [{
+                    "parts": [{
+                        "text": prompt
+                    }]
+                }],
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "maxOutputTokens": 4096 if is_report else 2048
+                }
+            }
+            
+            if system_instruction:
+                payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
+            
+            response = requests.post(
+                url,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=30
+            )
+            
+            response.raise_for_status()
+            result = response.json()
+            content = result["candidates"][0]["content"]["parts"][0]["text"]
+            return {"content": content, "provider": "Google Gemini", "attempted_providers": []}
+            
+        elif provider_name.lower() == "groq":
+            groq_api_key = os.getenv("GROQ_API_KEY")
+            if not groq_api_key:
+                raise Exception("Groq API key not configured")
+            
+            url = os.getenv("GROQ_API_URL", "https://api.groq.com/openai/v1/chat/completions")
+            payload = {
+                "model": os.getenv("GROQ_MODEL", "llama-3.1-8b-instant"),
+                "messages": [
+                    {"role": "system", "content": system_instruction or "You are a helpful research assistant."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.5,
+                "max_tokens": 1024 if not is_report else 2048
+            }
+            
+            response = requests.post(
+                url,
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {groq_api_key}",
+                    "Content-Type": "application/json"
+                },
+                timeout=30
+            )
+            
+            response.raise_for_status()
+            result = response.json()
+            content = result["choices"][0]["message"]["content"]
+            return {"content": content, "provider": "Groq", "attempted_providers": []}
+            
+        elif provider_name.lower() == "huggingface":
+            hugging_face_api_key = os.getenv("HUGGINGFACE_API_KEY")
+            if not hugging_face_api_key:
+                raise Exception("Hugging Face API key not configured")
+            
+            # Use Hugging Face InferenceClient
+            from huggingface_hub import InferenceClient
+            
+            # Get the first model from the configured models
+            huggingface_models = os.getenv("HUGGINGFACE_MODELS", "mistralai/Mistral-7B-Instruct-v0.2").split(",")
+            model_id = huggingface_models[0]
+            
+            client = InferenceClient(token=hugging_face_api_key)
+            messages = []
+            if system_instruction:
+                messages.append({"role": "system", "content": system_instruction})
+            messages.append({"role": "user", "content": prompt})
+            
+            response = client.chat_completion(
+                messages=messages,
+                model=model_id,
+                max_tokens=500 if not is_report else 1000,
+                temperature=0.7
+            )
+            
+            content = response.choices[0].message.content
+            return {"content": content, "provider": f"Hugging Face ({model_id})", "attempted_providers": []}
+            
+        else:
+            raise Exception(f"Unknown provider: {provider_name}")
+            
+    except Exception as e:
+        logger.error(f"Specific provider {provider_name} failed: {str(e)}")
+        # Fall back to the regular fallback chain
+        return generate_llm_content(prompt, system_instruction, is_report)
