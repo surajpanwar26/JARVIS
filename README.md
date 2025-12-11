@@ -13,6 +13,7 @@ JARVIS is an advanced AI research assistant that leverages multiple specialized 
 - **Real-time Visualization**: Watch the AI thought process unfold in real-time
 - **Rich Media Integration**: Automatic image fetching and embedding in reports
 - **Export Capabilities**: Export research findings to PDF and DOCX formats
+- **Secure Authentication**: Google OAuth 2.0 integration for user authentication
 
 ## Tech Stack
 
@@ -32,6 +33,7 @@ JARVIS is an advanced AI research assistant that leverages multiple specialized 
   - Tavily
   - Pexels or Unsplash (for image search)
   - Hugging Face (fallback provider)
+  - Google OAuth 2.0 (for authentication)
 
 ## Setup
 
@@ -50,14 +52,66 @@ JARVIS is an advanced AI research assistant that leverages multiple specialized 
    pip install -r requirements.txt
    ```
 
-3. Configure environment variables:
-   Copy `.env.example` to `.env` and fill in your API keys:
-   ```bash
-   cp .env.example .env
-   ```
+3. Configure Google OAuth (if you want authentication):
+   - Go to Google Cloud Console
+   - Create a new OAuth 2.0 Client ID
+   - For local development, add these URIs:
+     - Authorized JavaScript origins: `http://localhost:5173`
+     - Authorized redirect URIs: `http://localhost:8002/api/auth/callback`
+   - For production deployment, add these URIs:
+     - Authorized JavaScript origins: `https://your-frontend-url.onrender.com`
+     - Authorized redirect URIs: `https://your-frontend-url.onrender.com/api/auth/callback`
+   - Copy the Client ID and Client Secret to your `.env` file
 
-4. Run the development servers:
+4. Create a `.env` file in the root directory with the following variables:
+
+```env
+# Primary Intelligence (Required)
+GROQ_API_KEY=your_groq_api_key
+VITE_GROQ_API_KEY=your_groq_api_key
+
+# Report Generation & Vision (Highly Recommended)
+GOOGLE_API_KEY=your_google_api_key
+VITE_GOOGLE_API_KEY=your_google_api_key
+
+# Web Search (Optional)
+TAVILY_API_KEY=your_tavily_api_key
+VITE_TAVILY_API_KEY=your_tavily_api_key
+
+# Image Search (Choose One)
+PEXELS_API_KEY=your_pexels_api_key
+VITE_PEXELS_API_KEY=your_pexels_api_key
+UNSPLASH_ACCESS_KEY=your_unsplash_access_key
+VITE_UNSPLASH_ACCESS_KEY=your_unsplash_access_key
+
+# Fallback Provider
+HUGGINGFACE_API_KEY=your_huggingface_api_key
+VITE_HUGGINGFACE_API_KEY=your_huggingface_api_key
+
+# Database
+MONGODB_URI=your_mongodb_uri
+
+# Authentication
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+SESSION_SECRET_KEY=your_session_secret_key
+JWT_SECRET_KEY=your_jwt_secret_key
+
+# API Configuration
+API_URL=http://localhost:${PORT:-8002}
+VITE_API_URL=http://localhost:${PORT:-8002}
+
+# Port Configuration (Optional)
+# PORT=8002
+# FRONTEND_PORT=5173
+```
+
+5. Run the development servers:
    ```bash
+   # Using Docker Compose (recommended)
+   docker-compose up
+   
+   # Or run separately:
    # Terminal 1: Frontend
    npm run dev
    
@@ -96,66 +150,6 @@ python run_server.py
 npm install
 npm run build
 npm run preview
-```
-
-## Environment Variables
-
-Create a `.env` file in the root directory with the following variables:
-
-```env
-# Primary Intelligence (Required)
-GROQ_API_KEY=your_groq_api_key
-VITE_GROQ_API_KEY=your_groq_api_key
-
-# Report Generation & Vision (Highly Recommended)
-GOOGLE_API_KEY=your_google_api_key
-VITE_GOOGLE_API_KEY=your_google_api_key
-
-# Web Search (Optional)
-TAVILY_API_KEY=your_tavily_api_key
-VITE_TAVILY_API_KEY=your_tavily_api_key
-
-# Image Search (Choose One)
-PEXELS_API_KEY=your_pexels_api_key
-VITE_PEXELS_API_KEY=your_pexels_api_key
-UNSPLASH_ACCESS_KEY=your_unsplash_access_key
-VITE_UNSPLASH_ACCESS_KEY=your_unsplash_access_key
-
-# Fallback Provider
-HUGGINGFACE_API_KEY=your_huggingface_api_key
-VITE_HUGGINGFACE_API_KEY=your_huggingface_api_key
-
-# Database
-MONGODB_URI=your_mongodb_uri
-
-# Authentication
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-SESSION_SECRET_KEY=your_session_secret_key
-JWT_SECRET_KEY=your_jwt_secret_key
-
-# API Configuration
-API_URL=http://localhost:${PORT:-8002}
-VITE_API_URL=http://localhost:${PORT:-8002}
-
-# API Endpoint URLs (Optional - for custom endpoints)
-# TAVILY_API_URL=https://api.tavily.com/search
-# VITE_TAVILY_API_URL=https://api.tavily.com/search
-# PEXELS_API_URL=https://api.pexels.com/v1/search
-# VITE_PEXELS_API_URL=https://api.pexels.com/v1/search
-# UNSPLASH_API_URL=https://api.unsplash.com/search/photos
-# VITE_UNSPLASH_API_URL=https://api.unsplash.com/search/photos
-# GROQ_API_URL=https://api.groq.com/openai/v1/chat/completions
-# HUGGINGFACE_API_URL=https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct
-# GEMINI_API_URL=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent
-
-# Model Names (Optional - for custom models)
-# GROQ_MODEL=llama-3.3-70b-versatile
-# GEMINI_MODEL=gemini-2.5-flash
-
-# Port Configuration (Optional)
-# PORT=8002
-# FRONTEND_PORT=5173
 ```
 
 ## Project Structure

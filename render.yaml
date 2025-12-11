@@ -29,6 +29,8 @@ services:
         value: https://jarvis-l8gx.onrender.com
       - key: ENVIRONMENT
         value: production
+      - key: GOOGLE_REDIRECT_URI
+        value: https://jarvis-l8gx.onrender.com/api/auth/callback
 
   # Frontend Service
   - type: web
@@ -38,7 +40,7 @@ services:
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
     envVars:
-      - key: REACT_APP_API_URL
+      - key: VITE_API_URL
         value: https://jarvis-backend-nzcg.onrender.com
 
 # Prevent Docker autodetection
