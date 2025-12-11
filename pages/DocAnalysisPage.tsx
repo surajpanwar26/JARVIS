@@ -59,6 +59,14 @@ export const DocAnalysisPage: React.FC<DocAnalysisPageProps> = ({ initialFile, o
              setResult(data);
              setStatus(ResearchStatus.COMPLETED);
              setLogs(p => [...p, { id: generateId(), message: 'Analysis Complete', timestamp: new Date(), type: 'success' }]);
+             
+             // Initialize chat with a welcome message
+             setChatMessages([{
+               id: generateId(),
+               role: 'assistant',
+               content: `I've analyzed the document "${file.name}" and am ready to answer your questions about its content. What would you like to know?`,
+               timestamp: new Date()
+             }]);
           } catch (analysisError: any) {
              setStatus(ResearchStatus.ERROR);
              setLogs(p => [...p, { id: generateId(), message: `Analysis Error: ${analysisError.message}`, timestamp: new Date(), type: 'error' }]);
