@@ -4,6 +4,10 @@ import { QuickResultPage } from './pages/QuickResultPage';
 import { DeepResearchPage } from './pages/DeepResearchPage';
 import { DocAnalysisPage } from './pages/DocAnalysisPage';
 import { LoginPage } from './pages/LoginPage';
+import { ConfirmModal } from './components/ConfirmModal';
+import { getApiUrl } from './services/config';
+import './App.css';
+
 import { PageView } from './types';
 
 interface NavState {
@@ -19,9 +23,45 @@ interface User {
 }
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(true); // Bypass authentication for testing
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Start with unauthenticated state
   const [user, setUser] = useState<User | null>(null);
   const [navState, setNavState] = useState<NavState>({ page: 'HOME' });
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const handleLogin = () => {
+    // Set authenticated state when called from LoginPage
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = async () => {
+    try {
+      // Use environment variable for API URL with fallback to empty string in production
+      // @ts-ignore: ImportMeta.env is not properly typed in TypeScript
+      const apiUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 
+                    (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_URL) || 
+                    (typeof window !== 'undefined' ? '' : 'http://localhost:8002');
+      await fetch(`${apiUrl}/api/auth/logout`);
+      localStorage.removeItem('authToken');
+      setIsAuthenticated(false);
+      setUser(null);
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  const handleLogoutWithConfirmation = () => {
+    // Show custom confirmation modal
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
+    handleLogout();
+    setShowLogoutModal(false);
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutModal(false);
+  };
 
   // Check if user is already authenticated on app load
   useEffect(() => {
@@ -54,36 +94,6 @@ function App() {
     setNavState({ page, initialQuery, initialFile });
   };
 
-  const handleLogin = () => {
-    // Set authenticated state when called from LoginPage
-    setIsAuthenticated(true);
-  };
-
-  const handleLogout = async () => {
-    try {
-      // Use environment variable for API URL with fallback to empty string in production
-      // @ts-ignore: ImportMeta.env is not properly typed in TypeScript
-      const apiUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 
-                    (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_URL) || 
-                    (typeof window !== 'undefined' ? '' : 'http://localhost:8002');
-      await fetch(`${apiUrl}/api/auth/logout`);
-      localStorage.removeItem('authToken');
-      setIsAuthenticated(false);
-      setUser(null);
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
-
-  const handleLogoutWithConfirmation = () => {
-    // Show confirmation dialog
-    const confirmed = window.confirm('Are you sure you want to log out?');
-    if (confirmed) {
-      handleLogout();
-    }
-    // If user clicks "No", the function simply returns and user stays on the page
-  };
-
   if (!isAuthenticated) {
     return <LoginPage onLogin={handleLogin} />;
   }
@@ -96,6 +106,17 @@ function App() {
          <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-purple-600/5 blur-[100px]"></div>
          <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-cyan-600/5 blur-[100px]"></div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showLogoutModal}
+        onClose={cancelLogout}
+        onConfirm={confirmLogout}
+        title="Confirm Logout"
+        message="Are you sure you want to log out?"
+        confirmText="Yes, Log Out"
+        cancelText="Cancel"
+      />
 
       {/* Main Content View Port */}
       <main className="relative z-10 flex-1 h-screen overflow-hidden">
