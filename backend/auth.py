@@ -320,9 +320,12 @@ async def catch_all(request: Request, path: str):
 @router.get("/logout")
 async def logout(request: Request):
     """Logout user"""
+    # Clear session data
     request.session.pop('user', None)
     request.session.pop('jwt_token', None)
-    return {"message": "Successfully logged out"}
+    
+    # Return a response that indicates successful logout
+    return {"message": "Successfully logged out", "logged_out": True}
 
 @router.get("/user")
 async def get_current_user(request: Request):

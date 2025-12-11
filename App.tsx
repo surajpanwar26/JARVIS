@@ -34,17 +34,33 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      // Use environment variable for API URL with fallback to empty string in production
+      // Use environment variable for API URL with fallback to localhost
       // @ts-ignore: ImportMeta.env is not properly typed in TypeScript
-      const apiUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 
-                    (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_URL) || 
-                    (typeof window !== 'undefined' ? '' : 'http://localhost:8002');
-      await fetch(`${apiUrl}/api/auth/logout`);
+      const apiUrl = import.meta.env?.VITE_API_URL || `http://localhost:${import.meta.env?.PORT || 8002}`;
+      const response = await fetch(`${apiUrl}/api/auth/logout`, {
+        method: 'GET',
+        credentials: 'include' // Include cookies/session data
+      });
+      
+      // Clear local storage regardless of response
       localStorage.removeItem('authToken');
-      setIsAuthenticated(false);
-      setUser(null);
+      localStorage.removeItem('jarvis_user_email');
+      
+      if (response.ok) {
+        // Set authenticated state to false to show login page
+        setIsAuthenticated(false);
+        setUser(null);
+      } else {
+        console.error('Logout failed:', response.statusText);
+        // Still set authenticated state to false even if server call fails
+        setIsAuthenticated(false);
+        setUser(null);
+      }
     } catch (error) {
       console.error('Logout failed:', error);
+      // Still set authenticated state to false even if server call fails
+      setIsAuthenticated(false);
+      setUser(null);
     }
   };
 
