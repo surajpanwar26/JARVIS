@@ -137,7 +137,7 @@ def generate_user_id(email: str) -> str:
     return f"user_{email_hash}"
 
 # Add another alias route to handle the /api/auth/google path that might be used
-@router.get("/auth/google")
+@router.get("/google")
 async def login_via_google_alias(request: Request):
     """Alias for Google OAuth login to handle /api/auth/google path"""
     print("OAuth login request received at /api/auth/google")
@@ -174,14 +174,11 @@ async def login_via_google(request: Request):
         print(f"Generated redirect URI: {redirect_uri}")
     else:
         print(f"Using explicit redirect URI: {redirect_uri}")
-    
-    # For local development, we need to make sure the redirect URI is correct
-    if not is_production:
-        # In local development, use the backend port for callback
-        expected_local_redirect = f"http://localhost:{os.getenv('PORT', '8002')}/api/auth/google/callback"
-        if redirect_uri != expected_local_redirect:
-            print(f"WARNING: Local redirect URI mismatch! Expected: {expected_local_redirect}, Got: {redirect_uri}")
-            redirect_uri = expected_local_redirect
+        # Validate that the redirect URI matches expected format for the environment
+        if is_production and not redirect_uri.startswith("https://jarvis-backend-nzcg.onrender.com"):
+            print(f"WARNING: Production redirect URI mismatch! Got: {redirect_uri}")
+        elif not is_production and not redirect_uri.startswith("http://localhost"):
+            print(f"WARNING: Development redirect URI mismatch! Got: {redirect_uri}")
     
     try:
         # Force account selection by adding prompt parameter
@@ -197,7 +194,7 @@ async def login_via_google(request: Request):
         raise HTTPException(status_code=500, detail=f"Failed to initiate OAuth: {str(e)}")
 
 # Add catch-all route for debugging OAuth issues
-@router.get("/auth/google/callback")
+@router.get("/google/callback")
 async def auth_via_google_alias(request: Request):
     """Alias for Google OAuth callback to match Google Console configuration"""
     print("OAuth callback received at /api/auth/google/callback")
@@ -208,7 +205,7 @@ async def auth_via_google_alias(request: Request):
 @router.get("/callback")
 async def auth_via_google(request: Request):
     """Handle Google OAuth callback"""
-    print("OAuth callback received at /api/callback")
+    print("OAuth callback received at /api/auth/google/callback")
     print(f"Request query params: {dict(request.query_params)}")
     try:
         # Get user info from Google
@@ -307,16 +304,7 @@ async def auth_via_google(request: Request):
         print(f"Authentication failed: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Authentication failed: {str(e)}")
 
-# Add a catch-all route for debugging
-from fastapi import Request
-@router.get("/{path:path}")
-async def catch_all(request: Request, path: str):
-    """Catch-all route for debugging OAuth issues"""
-    print(f"Catch-all route hit: /api/{path}")
-    print(f"Request method: {request.method}")
-    print(f"Request headers: {dict(request.headers)}")
-    print(f"Request query params: {dict(request.query_params)}")
-    return {"detail": f"Endpoint /api/{path} not found"}
+# Catch-all route removed for debugging OAuth issues
 
 @router.get("/logout")
 async def logout(request: Request):
