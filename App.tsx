@@ -6,7 +6,6 @@ import { DocAnalysisPage } from './pages/DocAnalysisPage';
 import { LoginPage } from './pages/LoginPage';
 import { ConfirmModal } from './components/ConfirmModal';
 import { getApiUrl } from './services/config';
-import './App.css';
 
 import { PageView } from './types';
 
