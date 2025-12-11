@@ -132,43 +132,11 @@ def generate_user_id(email: str) -> str:
     email_hash = hashlib.md5(email.lower().encode()).hexdigest()[:8]
     return f"user_{email_hash}"
 
-@router.get("/login")
-async def login_via_google(request: Request):
-    """Initiate Google OAuth login"""
-    # Log request information for debugging
-    host = request.headers.get("host", "")
-    origin = request.headers.get("origin", "")
-    referer = request.headers.get("referer", "")
-    
-    print(f"OAuth login request - Host: {host}, Origin: {origin}, Referer: {referer}")
-    
-    # Determine the correct redirect URI based on environment variables or request origin
-    # Check if we have an explicit redirect URI set in environment variables (highest priority)
-    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
-    
-    print(f"Using redirect URI from env var: {redirect_uri}")
-    
-    if not redirect_uri:
-        # If no explicit redirect URI, determine based on environment
-        is_production = "jarvis-backend-nzcg.onrender.com" in host
-        
-        if is_production:
-            # Use the production frontend URL - note: the router is mounted at /api, so callback is at /api/callback
-            redirect_uri = "https://jarvis-l8gx.onrender.com/api/callback"
-        else:
-            # Use localhost frontend port
-            redirect_uri = f"http://localhost:{os.getenv('FRONTEND_PORT', '5173')}/api/callback"
-        
-        print(f"Generated redirect URI: {redirect_uri}")
-    else:
-        print(f"Using explicit redirect URI: {redirect_uri}")
-    
-    # Force account selection by adding prompt parameter
-    return await oauth.google.authorize_redirect(
-        request, 
-        redirect_uri,
-        prompt='select_account'
-    )
+# Add an alias route to match the Google Console configuration
+@router.get("/auth/google/callback")
+async def auth_via_google_alias(request: Request):
+    """Alias for Google OAuth callback to match Google Console configuration"""
+    return await auth_via_google(request)
 
 @router.get("/callback")
 async def auth_via_google(request: Request):
@@ -264,6 +232,44 @@ async def auth_via_google(request: Request):
         
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Authentication failed: {str(e)}")
+
+@router.get("/login")
+async def login_via_google(request: Request):
+    """Initiate Google OAuth login"""
+    # Log request information for debugging
+    host = request.headers.get("host", "")
+    origin = request.headers.get("origin", "")
+    referer = request.headers.get("referer", "")
+    
+    print(f"OAuth login request - Host: {host}, Origin: {origin}, Referer: {referer}")
+    
+    # Determine the correct redirect URI based on environment variables or request origin
+    # Check if we have an explicit redirect URI set in environment variables (highest priority)
+    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
+    
+    print(f"Using redirect URI from env var: {redirect_uri}")
+    
+    if not redirect_uri:
+        # If no explicit redirect URI, determine based on environment
+        is_production = "jarvis-backend-nzcg.onrender.com" in host
+        
+        if is_production:
+            # Use the production backend URL to match Google Console configuration
+            redirect_uri = "https://jarvis-backend-nzcg.onrender.com/api/auth/google/callback"
+        else:
+            # Use localhost backend port
+            redirect_uri = f"http://localhost:{os.getenv('PORT', '8002')}/api/auth/google/callback"
+        
+        print(f"Generated redirect URI: {redirect_uri}")
+    else:
+        print(f"Using explicit redirect URI: {redirect_uri}")
+    
+    # Force account selection by adding prompt parameter
+    return await oauth.google.authorize_redirect(
+        request, 
+        redirect_uri,
+        prompt='select_account'
+    )
 
 @router.get("/logout")
 async def logout(request: Request):
