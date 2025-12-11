@@ -192,16 +192,20 @@ async def login_via_google(request: Request):
         # Return an error response instead of letting it fall through
         raise HTTPException(status_code=500, detail=f"Failed to initiate OAuth: {str(e)}")
 
+# Add catch-all route for debugging OAuth issues
 @router.get("/auth/google/callback")
 async def auth_via_google_alias(request: Request):
     """Alias for Google OAuth callback to match Google Console configuration"""
     print("OAuth callback received at /api/auth/google/callback")
+    print(f"Request query params: {dict(request.query_params)}")
     return await auth_via_google(request)
 
+# Add another alias for the callback
 @router.get("/callback")
 async def auth_via_google(request: Request):
     """Handle Google OAuth callback"""
     print("OAuth callback received at /api/callback")
+    print(f"Request query params: {dict(request.query_params)}")
     try:
         # Get user info from Google
         token = await oauth.google.authorize_access_token(request)
@@ -260,6 +264,8 @@ async def auth_via_google(request: Request):
             # Redirect to development frontend
             redirect_url = origin or referer or f"http://localhost:{os.getenv('FRONTEND_PORT', '5173')}"
         
+        print(f"Redirecting user to: {redirect_url}")
+        
         # Return HTML that communicates with parent window and redirects
         html_content = f"""
         <!DOCTYPE html>
@@ -294,6 +300,17 @@ async def auth_via_google(request: Request):
     except Exception as e:
         print(f"Authentication failed: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Authentication failed: {str(e)}")
+
+# Add a catch-all route for debugging
+from fastapi import Request
+@router.get("/{path:path}")
+async def catch_all(request: Request, path: str):
+    """Catch-all route for debugging OAuth issues"""
+    print(f"Catch-all route hit: /api/{path}")
+    print(f"Request method: {request.method}")
+    print(f"Request headers: {dict(request.headers)}")
+    print(f"Request query params: {dict(request.query_params)}")
+    return {"detail": f"Endpoint /api/{path} not found"}
 
 @router.get("/logout")
 async def logout(request: Request):
