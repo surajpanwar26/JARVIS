@@ -452,7 +452,34 @@ export class ResearchWorkflow {
       console.warn("Backend health check failed, using frontend-only mode", e);
     }
 
-    // 2. Initialize Agents
+    // If backend is available, use it instead of frontend agents
+    if (useBackend) {
+      try {
+        this.emit({ type: 'log', message: `Starting ${isDeep ? 'Deep' : 'Quick'} Research on: ${topic}`, timestamp: new Date() });
+        this.emit({ type: 'log', message: 'Using backend for research processing', timestamp: new Date() });
+        
+        // Use backend API for research
+        const result = await api.startResearch(topic, isDeep);
+        
+        this.emit({ type: 'complete', data: result, timestamp: new Date() });
+        this.emit({ type: 'log', message: 'Research Pipeline Completed Successfully', timestamp: new Date() });
+        return {
+          topic,
+          isDeep,
+          plan: [],
+          context: [],
+          sources: result.sources,
+          images: result.images || [],
+          report: result.report
+        };
+      } catch (e: any) {
+        console.error("Backend Pipeline Error", e);
+        this.emit({ type: 'error', message: `Backend pipeline crashed: ${e.message}`, timestamp: new Date() });
+        throw e;
+      }
+    }
+
+    // 2. Initialize Agents (fallback to frontend-only mode)
     const editor = new EditorAgent(this.emit.bind(this));
     const researcher = new ResearcherAgent(this.emit.bind(this));
     const imager = new ImageAgent(this.emit.bind(this));
