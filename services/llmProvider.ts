@@ -17,6 +17,30 @@ interface LLMProvider {
   generateStream(params: GenerationParams): AsyncGenerator<string, void, unknown>;
 }
 
+// Helper function to detect fallback responses
+function isFallbackResponse(data: any): boolean {
+  // Check if provider is explicitly marked as Fallback
+  if (data && data.provider === "Fallback") {
+    return true;
+  }
+  
+  // Check content for fallback indicators
+  const content = data && (data.content || data.result) || "";
+  if (content && typeof content === 'string') {
+    const fallbackIndicators = [
+      "API limitations",
+      "fallback response",
+      "unable to generate a detailed response",
+      "Report Generation Failed"
+    ];
+    
+    return fallbackIndicators.some(indicator => 
+      content.includes(indicator)
+    );
+  }
+  return false;
+}
+
 // --- 1. Hugging Face Implementation (Fallback) ---
 class HuggingFaceProvider implements LLMProvider {
   private apiKey: string;
@@ -69,12 +93,12 @@ class HuggingFaceProvider implements LLMProvider {
       }
       
       // Check if this is a fallback response and handle appropriately
-      // The backend now returns standardized format: {content, provider, attempted_providers}
-      if (data.provider === "Fallback") {
-        console.warn("HuggingFace provider fell back to fallback response");
-        // Return the fallback content but don't throw an error
-        return data.content || "";
+      if (isFallbackResponse(data)) {
+        console.warn("HuggingFace provider returned fallback response");
+        // Throw an error to trigger the next fallback provider
+        throw new Error("HuggingFace provider returned fallback response");
       }
+      
       // Handle the standardized backend response format
       return data.content || data.result || "";
     } catch (error) {
@@ -141,12 +165,12 @@ class GroqProvider implements LLMProvider {
       }
       
       // Check if this is a fallback response and handle appropriately
-      // The backend now returns standardized format: {content, provider, attempted_providers}
-      if (data.provider === "Fallback") {
-        console.warn("Groq provider fell back to fallback response");
-        // Return the fallback content but don't throw an error
-        return data.content || "";
+      if (isFallbackResponse(data)) {
+        console.warn("Groq provider returned fallback response");
+        // Throw an error to trigger the next fallback provider
+        throw new Error("Groq provider returned fallback response");
       }
+      
       // Handle the standardized backend response format
       return data.content || data.result || "";
     } catch (error) {
@@ -217,12 +241,12 @@ class GeminiProvider implements LLMProvider {
       }
       
       // Check if this is a fallback response and handle appropriately
-      // The backend now returns standardized format: {content, provider, attempted_providers}
-      if (data.provider === "Fallback") {
-        console.warn("Gemini provider fell back to fallback response");
-        // Return the fallback content but don't throw an error
-        return data.content || "";
+      if (isFallbackResponse(data)) {
+        console.warn("Gemini provider returned fallback response");
+        // Throw an error to trigger the next fallback provider
+        throw new Error("Gemini provider returned fallback response");
       }
+      
       // Handle the standardized backend response format
       return data.content || data.result || "";
     } catch (e: any) {
