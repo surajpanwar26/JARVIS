@@ -28,11 +28,12 @@ class ReportAgent(BaseAgent):
             # Generate report using backend LLM endpoint (which has fallback chain)
             report_result = self._generate_report_with_llm(topic, context, is_deep)
             
-            # Check if this is a fallback response
+            # Check if this is a fallback response - if so, try hybrid search instead
             provider_used = report_result.get("provider", "Unknown")
             if provider_used == "Fallback":
-                logger.warning(f"[{self.name}] Report generated using fallback mechanism")
-                self.emit_event("agent_action", f"Using fallback response due to API limitations. Report may be less detailed than usual.")
+                logger.warning(f"[{self.name}] LLM generation returned fallback response, trying hybrid search approach")
+                self.emit_event("agent_action", "LLM generation returned fallback response, trying alternative search-based approach...")
+                raise Exception("LLM returned fallback response")
             else:
                 logger.info(f"[{self.name}] Report successfully generated using {provider_used}")
                 self.emit_event("agent_action", f"Report drafted using {provider_used}")
