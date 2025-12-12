@@ -304,6 +304,18 @@ class AggressiveFallbackProvider implements LLMProvider {
         console.log(`[AGGRESSIVE FALLBACK] Attempting generation with provider ${i + 1}/${this.providers.length}`);
         const result = await this.providers[i].generate(params);
         
+        // Check if this is a fallback response from the backend
+        // The backend returns fallback responses with specific markers
+        if (result && typeof result === 'string' && (
+          result.includes("API limitations") || 
+          result.includes("fallback response") ||
+          result.includes("unable to generate a detailed response") ||
+          result.includes("Report Generation Failed")
+        )) {
+          console.warn(`[AGGRESSIVE FALLBACK] Provider ${i + 1} returned fallback response, treating as failure`);
+          throw new Error(`Provider ${i + 1} returned fallback response: ${result.substring(0, 100)}...`);
+        }
+        
         // Check if result is valid (not empty, not just whitespace)
         if (result && result.trim().length > 0) {
           console.log(`[AGGRESSIVE FALLBACK] Successfully generated content with provider ${i + 1}`);
