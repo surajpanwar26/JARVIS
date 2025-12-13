@@ -374,6 +374,29 @@ async def get_user_history(user_id: str):
         logger.error(f"Failed to retrieve user history: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve user history: {str(e)}")
 
+@app.post("/api/search")
+async def search_endpoint(request: dict):
+    """Endpoint to perform search operations using backend agents"""
+    try:
+        query = request.get("query", "")
+        if not query:
+            raise HTTPException(status_code=400, detail="Query parameter is required")
+        
+        logger.info(f"Received search request: {query}")
+        
+        # Import the search utilities
+        from backend.search.hybrid_search import perform_hybrid_search
+        
+        # Perform search using the backend search utilities
+        search_result = perform_hybrid_search(query)
+        
+        return search_result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Search failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
 @app.options("/api/research")
 async def research_options():
     return {"message": "API endpoint for research requests"}

@@ -12,94 +12,50 @@ interface SearchResult {
 // --- 1. Gemini Grounding Implementation (Primary/Fallback) ---
 // This enables "Single API Key" mode using just the Google Key.
 const geminiSearch = async (query: string): Promise<SearchResult> => {
-  if (!config.googleApiKey) throw new Error("No Google API Key for search");
-  
-  const ai = new GoogleGenAI({ apiKey: config.googleApiKey });
-  
+  // Instead of making direct API calls, use the backend search endpoint
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: `You are a search engine. Perform a comprehensive real-time Google Search for: "${query}".
-      
-      1. Provide a very detailed summary of the findings, prioritizing data, statistics, and concrete facts.
-      2. IMPORTANT: If you find relevant images in the search results, you MUST embed them in the text using Markdown format: ![alt text](url).
-      3. Try to include at least 3 relevant images if possible.
-      `,
-      config: { 
-        tools: [{ googleSearch: {} }],
-        thinkingConfig: { thinkingBudget: 0 } 
+    const response = await fetch("/api/search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
       },
+      body: JSON.stringify({ query })
     });
 
-    const text = response.text || "";
-    const sources: Source[] = [];
-    const images: string[] = [];
-
-    const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-    if (chunks) {
-      chunks.forEach((chunk: any) => {
-        if (chunk.web) {
-          sources.push({ title: chunk.web.title, uri: chunk.web.uri });
-        }
-      });
+    if (!response.ok) {
+      throw new Error(`Backend search API Error: ${response.statusText}`);
     }
 
-    // Extract images from markdown
-    const imgRegex = /!\[.*?\]\((.*?)\)/g;
-    let match;
-    while ((match = imgRegex.exec(text)) !== null) {
-      if (match[1].startsWith('http')) {
-        images.push(match[1]);
-      }
-    }
-
-    return { text, sources, images };
+    const data = await response.json();
+    return data as SearchResult;
   } catch (e) {
-    console.error("Gemini Search Failed:", e);
+    console.error("Backend Search Failed:", e);
     throw e;
   }
 };
 
 // --- 2. Tavily Implementation (Optional) ---
 const tavilySearch = async (query: string): Promise<SearchResult> => {
-  if (!config.tavilyApiKey) throw new Error("Tavily Key missing");
+  // Use the backend search endpoint instead of direct API calls
+  try {
+    const response = await fetch("/api/search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ query })
+    });
 
-  const response = await fetch(getEnv('TAVILY_API_URL') || "https://api.tavily.com/search", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      api_key: config.tavilyApiKey,
-      query: query,
-      search_depth: "advanced", 
-      include_images: true,
-      include_answer: true, 
-      max_results: 10
-    })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    // Handle specific Tavily error cases
-    if (response.status === 432) {
-      throw new Error("Tavily API usage limit exceeded. Falling back to Google search.");
-    } else if (response.status === 401) {
-      throw new Error("Tavily API key is invalid. Falling back to Google search.");
-    } else if (response.status === 429) {
-      throw new Error("Tavily API rate limit exceeded. Falling back to Google search.");
+    if (!response.ok) {
+      throw new Error(`Backend search API Error: ${response.statusText}`);
     }
-    throw new Error(`Tavily API Error: ${response.status} - ${errorText}`);
+
+    const data = await response.json();
+    return data as SearchResult;
+  } catch (e) {
+    console.error("Backend Search Failed:", e);
+    throw e;
   }
-  const data = await response.json();
-
-  let text = data.answer || "";
-  if (data.results) {
-    text += data.results.map((r: any) => `\nTitle: ${r.title}\nContent: ${r.content}`).join("\n");
-  }
-
-  const sources = data.results?.map((r: any) => ({ title: r.title, uri: r.url })) || [];
-  const images = data.images || [];
-
-  return { text, sources, images };
 };
 
 // --- Image Augmentation ---
